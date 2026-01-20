@@ -129,51 +129,21 @@ export function printReceipt(elementId) {
     return;
   }
 
-  // Create a new window for printing
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Please allow popups to print receipt');
-    return;
-  }
-
-  // Get the receipt HTML
-  const receiptHTML = element.innerHTML;
-
-  // Build HTML using string concatenation with character codes to avoid JSX parsing
-  const lt = String.fromCharCode(60); // <
-  const gt = String.fromCharCode(62); // >
-  const slash = String.fromCharCode(47); // /
-  const exclamation = String.fromCharCode(33); // !
+  // Use window.print() directly on the current page
+  // This is simpler and avoids HTML string parsing issues
+  const originalDisplay = element.style.display;
+  element.style.display = 'block';
   
-  const docType = exclamation + 'DOCTYPE html' + gt;
-  const htmlTag = 'html';
-  const headTag = 'head';
-  const titleTag = 'title';
-  const styleTag = 'style';
-  const bodyTag = 'body';
+  // Create a print stylesheet
+  const printStyle = document.createElement('style');
+  printStyle.textContent = '@media print{@page{size:A4;margin:1cm}body{margin:0;padding:0}}body{font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto}.receipt-header{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:20px}.receipt-body{margin:20px 0}.receipt-footer{border-top:2px solid #000;padding-top:10px;margin-top:20px;text-align:center}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{padding:8px;text-align:left;border-bottom:1px solid #ddd}th{background-color:#f5f5f5;font-weight:bold}.text-right{text-align:right}.text-center{text-align:center}.total-row{font-weight:bold;font-size:1.1em}';
+  document.head.appendChild(printStyle);
   
-  const styleContent = '@media print{@page{size:A4;margin:1cm}body{margin:0;padding:0}}body{font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto}.receipt-header{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:20px}.receipt-body{margin:20px 0}.receipt-footer{border-top:2px solid #000;padding-top:10px;margin-top:20px;text-align:center}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{padding:8px;text-align:left;border-bottom:1px solid #ddd}th{background-color:#f5f5f5;font-weight:bold}.text-right{text-align:right}.text-center{text-align:center}.total-row{font-weight:bold;font-size:1.1em}';
+  window.print();
   
-  const htmlContent = docType + 
-    lt + htmlTag + gt +
-    lt + headTag + gt +
-    lt + titleTag + gt + 'Receipt' + lt + slash + titleTag + gt +
-    lt + styleTag + gt + styleContent + lt + slash + styleTag + gt +
-    lt + slash + headTag + gt +
-    lt + bodyTag + gt +
-    receiptHTML +
-    lt + slash + bodyTag + gt +
-    lt + slash + htmlTag + gt;
-  
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
-
-  // Wait for content to load, then print
-  printWindow.onload = () => {
-    setTimeout(() => {
-      printWindow.print();
-    }, 250);
-  };
+  // Cleanup
+  document.head.removeChild(printStyle);
+  element.style.display = originalDisplay;
 }
 
 /**

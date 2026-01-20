@@ -186,43 +186,51 @@ export function exportToExcel(data, headers, filename) {
  * @returns {string} HTML content
  */
 export function generatePDFContent(title, data, headers) {
+  // Build table rows using string concatenation to avoid JSX parsing
   const tableRows = data
-    .map(
-      (row) =>
-        `<tr>${headers.map((header) => `<td>${row[header] ?? ''}</td>`).join('')}</tr>`
-    )
+    .map((row) => {
+      const cells = headers.map((header) => {
+        const value = String(row[header] ?? '');
+        return '<td>' + value + '</td>';
+      }).join('');
+      return '<tr>' + cells + '</tr>';
+    })
     .join('');
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${title}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        h1 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: bold; }
-        @media print {
-          body { padding: 0; }
-        }
-      </style>
-    </head>
-    <body>
-      <h1>${title}</h1>
-      <p>Generated on: ${new Date().toLocaleString()}</p>
-      <table>
-        <thead>
-          <tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-        </tbody>
-      </table>
-    </body>
-    </html>
-  `;
+  const headerRow = headers.map((h) => '<th>' + String(h) + '</th>').join('');
+  const generatedDate = new Date().toLocaleString();
+  
+  // Build HTML using string concatenation to avoid JSX parsing
+  const parts = [
+    '<!DOCTYPE html>',
+    '<html>',
+    '<head>',
+    '<title>', title, '</title>',
+    '<style>',
+    'body { font-family: Arial, sans-serif; padding: 20px; }',
+    'h1 { color: #333; }',
+    'table { width: 100%; border-collapse: collapse; margin-top: 20px; }',
+    'th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }',
+    'th { background-color: #f2f2f2; font-weight: bold; }',
+    '@media print { body { padding: 0; } }',
+    '</style>',
+    '</head>',
+    '<body>',
+    '<h1>', title, '</h1>',
+    '<p>Generated on: ', generatedDate, '</p>',
+    '<table>',
+    '<thead>',
+    '<tr>', headerRow, '</tr>',
+    '</thead>',
+    '<tbody>',
+    tableRows,
+    '</tbody>',
+    '</table>',
+    '</body>',
+    '</html>'
+  ];
+  
+  return parts.join('');
 }
 
 /**
@@ -232,12 +240,22 @@ export function generatePDFContent(title, data, headers) {
  * @param {string[]} headers - Column headers
  */
 export function exportToPDF(title, data, headers) {
-  const content = generatePDFContent(title, data, headers);
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(content);
-  printWindow.document.close();
-  printWindow.focus();
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    console.error('exportToPDF can only be called in browser environment');
+    return;
+  }
+  
+  // Use a simpler approach - create a hidden element and print it
+  const printContainer = document.createElement('div');
+  printContainer.style.position = 'absolute';
+  printContainer.style.left = '-9999px';
+  printContainer.innerHTML = generatePDFContent(title, data, headers);
+  document.body.appendChild(printContainer);
+  
+  window.print();
+  
+  // Cleanup
   setTimeout(() => {
-    printWindow.print();
-  }, 250);
+    document.body.removeChild(printContainer);
+  }, 1000);
 }
