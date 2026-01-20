@@ -140,74 +140,76 @@ export function printReceipt(elementId) {
   const receiptHTML = element.innerHTML;
 
   // Write to print window
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Receipt</title>
-        <style>
-          @media print {
-            @page {
-              size: A4;
-              margin: 1cm;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-            }
-          }
-          body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-          }
-          .receipt-header {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-          }
-          .receipt-body {
-            margin: 20px 0;
-          }
-          .receipt-footer {
-            border-top: 2px solid #000;
-            padding-top: 10px;
-            margin-top: 20px;
-            text-align: center;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-          }
-          th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-          }
-          th {
-            background-color: #f5f5f5;
-            font-weight: bold;
-          }
-          .text-right {
-            text-align: right;
-          }
-          .text-center {
-            text-align: center;
-          }
-          .total-row {
-            font-weight: bold;
-            font-size: 1.1em;
-          }
-        </style>
-      </head>
-      <body>
-        ${receiptHTML}
-      </body>
-    </html>
-  `);
+  const htmlContent = [
+    '<!DOCTYPE html>',
+    '<html>',
+    '  <head>',
+    '    <title>Receipt</title>',
+    '    <style>',
+    '      @media print {',
+    '        @page {',
+    '          size: A4;',
+    '          margin: 1cm;',
+    '        }',
+    '        body {',
+    '          margin: 0;',
+    '          padding: 0;',
+    '        }',
+    '      }',
+    '      body {',
+    '        font-family: Arial, sans-serif;',
+    '        padding: 20px;',
+    '        max-width: 600px;',
+    '        margin: 0 auto;',
+    '      }',
+    '      .receipt-header {',
+    '        text-align: center;',
+    '        border-bottom: 2px solid #000;',
+    '        padding-bottom: 10px;',
+    '        margin-bottom: 20px;',
+    '      }',
+    '      .receipt-body {',
+    '        margin: 20px 0;',
+    '      }',
+    '      .receipt-footer {',
+    '        border-top: 2px solid #000;',
+    '        padding-top: 10px;',
+    '        margin-top: 20px;',
+    '        text-align: center;',
+    '      }',
+    '      table {',
+    '        width: 100%;',
+    '        border-collapse: collapse;',
+    '        margin: 15px 0;',
+    '      }',
+    '      th, td {',
+    '        padding: 8px;',
+    '        text-align: left;',
+    '        border-bottom: 1px solid #ddd;',
+    '      }',
+    '      th {',
+    '        background-color: #f5f5f5;',
+    '        font-weight: bold;',
+    '      }',
+    '      .text-right {',
+    '        text-align: right;',
+    '      }',
+    '      .text-center {',
+    '        text-align: center;',
+    '      }',
+    '      .total-row {',
+    '        font-weight: bold;',
+    '        font-size: 1.1em;',
+    '      }',
+    '    </style>',
+    '  </head>',
+    '  <body>',
+    '    ' + receiptHTML,
+    '  </body>',
+    '</html>'
+  ].join('\n');
+  
+  printWindow.document.write(htmlContent);
 
   printWindow.document.close();
 
