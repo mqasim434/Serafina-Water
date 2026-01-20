@@ -28,8 +28,8 @@ import { ordersService } from '../features/orders/slice.js';
 import { setPayments, addPayment } from '../features/payments/slice.js';
 import { paymentsService } from '../features/payments/slice.js';
 import { setCashBalance } from '../features/orders/slice.js';
-import { cashService } from '../features/cash/service.js';
-import { generateReceiptData, printReceipt, shareReceiptViaWhatsApp } from '../features/receipts/service.js';
+import * as cashService from '../features/cash/service.js';
+import * as receiptsService from '../features/receipts/service.js';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 
 const TABS = {
@@ -123,7 +123,7 @@ export function Bottles() {
       // Show receipt
       const customer = customers.find((c) => c.id === selectedCustomerId);
       const product = products.find((p) => p.id === result.order.productId);
-      const receiptData = generateReceiptData(result.order, customer, product);
+      const receiptData = receiptsService.generateReceiptData(result.order, customer, product);
       setLastOrder({ order: result.order, receiptData, customer, product });
       setShowReceipt(true);
     } catch (err) {
@@ -159,13 +159,13 @@ export function Bottles() {
 
   const handlePrintReceipt = () => {
     if (lastOrder) {
-      printReceipt('receipt-template');
+      receiptsService.printReceipt('receipt-template');
     }
   };
 
   const handleShareReceipt = () => {
     if (lastOrder) {
-      shareReceiptViaWhatsApp(lastOrder.receiptData, lastOrder.customer?.phone);
+      receiptsService.shareReceiptViaWhatsApp(lastOrder.receiptData, lastOrder.customer?.phone);
     }
   };
 

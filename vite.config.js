@@ -20,8 +20,12 @@ export default defineConfig({
         },
       },
     },
+    target: 'esnext',
   },
   optimizeDeps: {
     include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+  },
+  define: {
+    'process.env': {},
   },
 })

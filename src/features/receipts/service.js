@@ -118,6 +118,11 @@ export function generateWhatsAppShareUrl(text, phoneNumber = null) {
  * @param {string} elementId - ID of the element to print
  */
 export function printReceipt(elementId) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    console.error('printReceipt can only be called in browser environment');
+    return;
+  }
+  
   const element = document.getElementById(elementId);
   if (!element) {
     console.error('Receipt element not found');
@@ -247,7 +252,11 @@ export function downloadReceiptAsPDF(elementId) {
  * @param {string} phoneNumber - Customer phone number (optional)
  */
 export function shareReceiptViaWhatsApp(receiptData, phoneNumber = null) {
+  if (typeof window === 'undefined') {
+    console.error('shareReceiptViaWhatsApp can only be called in browser environment');
+    return;
+  }
+  
   const shareText = generateWhatsAppShareText(receiptData);
   const shareUrl = generateWhatsAppShareUrl(shareText, phoneNumber);
   window.open(shareUrl, '_blank');
-}
