@@ -37,7 +37,10 @@ class FirebaseStorageService {
    */
   async setItem(key, value) {
     if (!this._isFirestoreAvailable()) {
-      throw new Error('Firestore is not initialized. Please configure Firebase environment variables.');
+      const errorMsg = 'Firestore is not initialized. Please configure Firebase environment variables in Vercel. Check browser console for details.';
+      console.error(`❌ ${errorMsg}`);
+      console.error(`   Attempted to save to collection: "${key}"`);
+      throw new Error(errorMsg);
     }
 
     try {
@@ -67,7 +70,12 @@ class FirebaseStorageService {
    */
   async getItem(key) {
     if (!this._isFirestoreAvailable()) {
-      throw new Error('Firestore is not initialized. Please configure Firebase environment variables.');
+      const errorMsg = 'Firestore is not initialized. Please configure Firebase environment variables in Vercel. Check browser console for details.';
+      console.error(`❌ ${errorMsg}`);
+      console.error(`   Attempted to access collection: "${key}"`);
+      // Return empty array instead of throwing to prevent app crash
+      // The error is already logged for debugging
+      return [];
     }
 
     try {
