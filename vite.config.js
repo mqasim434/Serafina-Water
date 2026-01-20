@@ -8,12 +8,20 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   build: {
+    commonjsOptions: {
+      include: [/firebase/, /node_modules/],
+    },
     rollupOptions: {
       output: {
         manualChunks: {
-          'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'firebase-core': ['firebase/app'],
+          'firebase-auth': ['firebase/auth'],
+          'firebase-firestore': ['firebase/firestore'],
         },
       },
     },
+  },
+  optimizeDeps: {
+    include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
   },
 })
