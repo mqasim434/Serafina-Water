@@ -125,7 +125,7 @@ export async function signIn(username, password) {
  * @returns {Promise<void>}
  */
 export async function signOut() {
-  // Clear local storage
+  // Clear auth data from Firestore
   await clearAuthData();
 }
 

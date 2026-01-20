@@ -47,14 +47,26 @@ export function validateProduct(data) {
  * @returns {Promise<import('./types.js').Product[]>}
  */
 export async function loadProducts() {
-  const products = await storageService.getItem(STORAGE_KEY);
-  if (!products) return [];
-  
-  // Ensure all products have a price field (backward compatibility)
-  return products.map(product => ({
-    ...product,
-    price: product.price !== undefined ? product.price : 0,
-  }));
+  try {
+    const products = await storageService.getItem(STORAGE_KEY);
+    
+    // Handle null, undefined, or empty array
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      console.log('No products found in storage');
+      return [];
+    }
+    
+    // Ensure all products have a price field (backward compatibility)
+    // Products from Firestore already have the correct structure: { id, name, size, price, ... }
+    return products.map(product => ({
+      ...product,
+      price: product.price !== undefined ? product.price : 0,
+      isActive: product.isActive !== undefined ? product.isActive : true,
+    }));
+  } catch (error) {
+    console.error('Error loading products:', error);
+    return [];
+  }
 }
 
 /**

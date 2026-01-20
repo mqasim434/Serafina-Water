@@ -25,12 +25,29 @@ let auth;
 let db;
 
 try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
+  // Validate that all required config values are present
+  const requiredConfig = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+  const missingConfig = requiredConfig.filter(key => !firebaseConfig[key]);
+  
+  if (missingConfig.length > 0) {
+    console.error('Missing Firebase configuration:', missingConfig);
+    console.error('Please set all Firebase environment variables in Vercel/your hosting platform.');
+    app = null;
+    auth = null;
+    db = null;
+  } else {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    console.log('Firebase initialized successfully');
+  }
 } catch (error) {
   console.error('Firebase initialization error:', error);
-  // App will fall back to localStorage if Firebase fails
+  console.error('Firebase is required for this application. Please configure Firebase environment variables.');
+  // Set to null so the app can detect Firebase is not available
+  app = null;
+  auth = null;
+  db = null;
 }
 
 export { app, auth, db };

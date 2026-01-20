@@ -72,21 +72,17 @@ export function validateUser(data, isNewUser = true) {
  * @returns {Promise<import('./types.js').User[]>}
  */
 export async function loadUsers() {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please configure Firebase environment variables.');
+  }
+
   try {
-    if (db) {
-      // Use Firestore
-      const users = await getDocuments(COLLECTION_NAME);
-      return users || [];
-    } else {
-      // Fallback to localStorage
-      const users = await storageService.getItem(STORAGE_KEY);
-      return users || [];
-    }
+    // Use Firestore
+    const users = await getDocuments(COLLECTION_NAME);
+    return users || [];
   } catch (error) {
     console.error('Error loading users:', error);
-    // Fallback to localStorage
-    const users = await storageService.getItem(STORAGE_KEY);
-    return users || [];
+    throw new Error(`Failed to load users from Firestore: ${error.message}`);
   }
 }
 
@@ -96,20 +92,18 @@ export async function loadUsers() {
  * @returns {Promise<void>}
  */
 export async function saveUsers(users) {
+  if (!db) {
+    throw new Error('Firestore is not initialized. Please configure Firebase environment variables.');
+  }
+
   try {
-    if (db) {
-      // Use Firestore - save each user as a document
-      for (const user of users) {
-        await setDocument(COLLECTION_NAME, user.id, user, true);
-      }
-    } else {
-      // Fallback to localStorage
-      await storageService.setItem(STORAGE_KEY, users);
+    // Use Firestore - save each user as a document
+    for (const user of users) {
+      await setDocument(COLLECTION_NAME, user.id, user, true);
     }
   } catch (error) {
     console.error('Error saving users:', error);
-    // Fallback to localStorage
-    await storageService.setItem(STORAGE_KEY, users);
+    throw new Error(`Failed to save users to Firestore: ${error.message}`);
   }
 }
 

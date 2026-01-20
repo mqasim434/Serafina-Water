@@ -59,12 +59,15 @@ export async function getDocuments(collectionName, filters = [], orderByField = 
       throw new Error('Firestore not initialized');
     }
     
-    let q = collection(db, collectionName);
+    const colRef = collection(db, collectionName);
+    let q = query(colRef);
     
     // Apply filters
-    filters.forEach(filter => {
-      q = query(q, where(filter.field, filter.operator, filter.value));
-    });
+    if (filters && Array.isArray(filters) && filters.length > 0) {
+      filters.forEach(filter => {
+        q = query(q, where(filter.field, filter.operator, filter.value));
+      });
+    }
     
     // Apply ordering
     if (orderByField) {
@@ -72,13 +75,18 @@ export async function getDocuments(collectionName, filters = [], orderByField = 
     }
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
+    const documents = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
     }));
+    
+    console.log(`Retrieved ${documents.length} documents from collection "${collectionName}"`);
+    return documents;
   } catch (error) {
     console.error(`Error getting documents from ${collectionName}:`, error);
-    throw error;
+    // Don't throw - return empty array instead to allow fallback
+    console.warn(`Falling back to empty array for collection "${collectionName}"`);
+    return [];
   }
 }
 
