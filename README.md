@@ -1,16 +1,131 @@
-# React + Vite
+# Serafina Water Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive water delivery management system built with React, Redux, and Firebase.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🏢 **Customer Management** - Manage customers with custom product pricing
+- 📦 **Product Management** - Add and manage bottle products
+- 🛒 **Order Management** - Place orders with payment tracking
+- 🔄 **Bottle Returns** - Track bottle returns
+- 💰 **Payment Tracking** - Track payments and outstanding balances
+- 📊 **Reports** - Generate various business reports
+- 💵 **Cash Management** - Track cash on hand, daily/weekly/monthly summaries
+- 💸 **Expense Management** - Track and categorize expenses
+- 👥 **User Management** - Admin can create staff accounts
+- 🌐 **Multi-language** - English and Urdu support
+- 📱 **Responsive Design** - Works on desktop and mobile
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React 18, Redux Toolkit, React Router
+- **Styling**: Tailwind CSS
+- **Backend**: Firebase Firestore
+- **Authentication**: Custom Firestore-based authentication
+- **Build Tool**: Vite
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js 18+ and npm
+- Firebase project (see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md))
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/serafina-water.git
+cd serafina-water
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env and add your Firebase configuration
+```
+
+4. Start development server:
+```bash
+npm run dev
+```
+
+5. Open [http://localhost:5173](http://localhost:5173)
+
+### Default Login
+
+- **Username**: `admin`
+- **Password**: `admin`
+
+⚠️ **Change this password immediately after first login!**
+
+## Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Vercel
+
+1. Push code to GitHub
+2. Import repository on [Vercel](https://vercel.com)
+3. Add environment variables
+4. Deploy!
+
+See [GITHUB_VERCEL_SETUP.md](./GITHUB_VERCEL_SETUP.md) for complete CI/CD setup.
+
+## Project Structure
+
+```
+src/
+├── features/          # Feature modules
+│   ├── auth/         # Authentication
+│   ├── customers/     # Customer management
+│   ├── products/      # Product management
+│   ├── orders/        # Order management
+│   ├── bottles/       # Bottle tracking
+│   ├── payments/      # Payment tracking
+│   ├── expenses/      # Expense management
+│   ├── cash/          # Cash management
+│   ├── reports/       # Reports
+│   ├── settings/      # Settings
+│   └── users/         # User management
+├── pages/             # Page components
+├── shared/            # Shared components and utilities
+└── store/             # Redux store configuration
+```
+
+## Environment Variables
+
+Required environment variables (see `.env.example`):
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+## Documentation
+
+- [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) - Firebase configuration guide
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Deployment options
+- [GITHUB_VERCEL_SETUP.md](./GITHUB_VERCEL_SETUP.md) - CI/CD setup guide
+
+## License
+
+Private project - All rights reserved
+
+## Support
+
+For issues and questions, please contact the development team.
