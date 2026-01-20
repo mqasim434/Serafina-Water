@@ -1,0 +1,275 @@
+/**
+ * Payments Page
+ * 
+ * Main page for payment management
+ */
+
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { PaymentForm } from '../features/payments/components/PaymentForm.jsx';
+import { PaymentHistory } from '../features/payments/components/PaymentHistory.jsx';
+import { CustomerBalanceCard } from '../features/payments/components/CustomerBalanceCard.jsx';
+import {
+  setLoading,
+  setPayments,
+  addPayment,
+  setError,
+} from '../features/payments/slice.js';
+import { paymentsService } from '../features/payments/slice.js';
+import { ordersService, setOrders } from '../features/orders/slice.js';
+import { setCustomers } from '../features/customers/slice.js';
+import { customersService } from '../features/customers/slice.js';
+
+const VIEW_MODES = {
+  LIST: 'list',
+  PAYMENT: 'payment',
+};
+
+export function Payments() {
+  const dispatch = useDispatch();
+  const { t } = useTranslation();
+  const { items: customers } = useSelector((state) => state.customers);
+  const { items: orders } = useSelector((state) => state.orders);
+  const { items: payments, isLoading, error } = useSelector((state) => state.payments);
+  const { user } = useSelector((state) => state.auth);
+
+  const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+
+  // Load payments, orders, and customers on mount - always ensure customers are loaded
+  useEffect(() => {
+    async function loadData() {
+      // Only show loading if we don't have data yet
+      if (payments.length === 0 || customers.length === 0) {
+        dispatch(setLoading(true));
+      }
+      try {
+        const loadPromises = [paymentsService.loadPayments()];
+        
+        // Load orders if not already loaded
+        if (orders.length === 0) {
+          loadPromises.push(ordersService.loadOrders());
+        } else {
+          loadPromises.push(Promise.resolve(null));
+        }
+        
+        // Always load customers to ensure they're available
+        loadPromises.push(customersService.loadCustomers());
+        
+        const [loadedPayments, loadedOrders, loadedCustomers] = await Promise.all(loadPromises);
+        
+        dispatch(setPayments(loadedPayments));
+        
+        if (loadedOrders !== null) {
+          dispatch(setOrders(loadedOrders));
+        }
+        
+        // Always update customers if we loaded them
+        if (loadedCustomers && loadedCustomers.length > 0) {
+          dispatch(setCustomers(loadedCustomers));
+        }
+      } catch (err) {
+        dispatch(setError(err.message));
+      } finally {
+        dispatch(setLoading(false));
+      }
+    }
+
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
+
+  const handleRecordPayment = () => {
+    setViewMode(VIEW_MODES.PAYMENT);
+    setSelectedCustomerId('');
+  };
+
+  const handleCustomerSelect = (customerId) => {
+    setSelectedCustomerId(customerId);
+    setViewMode(VIEW_MODES.PAYMENT);
+  };
+
+  const handleFormSubmit = async (customerId, amount, paymentMethod, notes) => {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+
+    try {
+      const newPayment = await paymentsService.createPayment(
+        {
+          customerId,
+          amount,
+          paymentMethod,
+          notes,
+        },
+        payments,
+        user?.id || null
+      );
+
+      dispatch(addPayment(newPayment));
+      setViewMode(VIEW_MODES.LIST);
+      setSelectedCustomerId(customerId);
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const handleCancel = () => {
+    setViewMode(VIEW_MODES.LIST);
+    setSelectedCustomerId('');
+  };
+
+  const getOutstandingBalance = (customerId) => {
+    return paymentsService.calculateOutstandingBalance(customerId, orders, payments, customers);
+  };
+
+  // Get all customers with balances
+  const customerBalances = paymentsService.getAllCustomerBalances(orders, payments, customers);
+  const customersWithBalance = customerBalances
+    .filter((cb) => cb.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+
+  if (isLoading && payments.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">{t('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">{t('payments')}</h1>
+        <button
+          onClick={handleRecordPayment}
+          className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          {t('recordPayment')}
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+
+      {viewMode === VIEW_MODES.LIST && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Customers with Outstanding Balance */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t('outstandingBalance')}
+              </h2>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {customersWithBalance.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  {t('noPayments')}
+                </div>
+              ) : (
+                customersWithBalance.map((balance) => {
+                  const customer = customers.find((c) => c.id === balance.customerId);
+                  if (!customer) return null;
+                  return (
+                    <button
+                      key={balance.customerId}
+                      onClick={() => handleCustomerSelect(balance.customerId)}
+                      className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">{customer.name}</p>
+                          <p className="text-sm text-gray-500 mt-1">{customer.phone}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-orange-600">
+                            Rs. {balance.balance.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Selected Customer Details */}
+          {selectedCustomerId && (
+            <div className="space-y-6">
+              <CustomerBalanceCard customerId={selectedCustomerId} />
+              <PaymentHistory customerId={selectedCustomerId} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {viewMode === VIEW_MODES.PAYMENT && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('newPayment')}</h2>
+
+            {!selectedCustomerId && (
+              <div className="mb-4">
+                <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
+                  {t('selectCustomer')} <span className="text-red-500">*</span>
+                </label>
+                {customers.length === 0 ? (
+                  <div className="mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+                    {t('loadingCustomers') || 'Loading customers...'}
+                  </div>
+                ) : (
+                  <select
+                    id="customer"
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="">{t('selectCustomer')}</option>
+                    {customers.map((customer) => {
+                      const balance = getOutstandingBalance(customer.id);
+                      return (
+                        <option key={customer.id} value={customer.id}>
+                          {customer.name} {balance > 0 ? `- Rs. ${balance.toLocaleString()} ${t('outstandingBalance')}` : `(${t('noBalance') || 'No balance'})`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {selectedCustomerId && (
+              <PaymentForm
+                customerId={selectedCustomerId}
+                outstandingBalance={getOutstandingBalance(selectedCustomerId)}
+                onSubmit={handleFormSubmit}
+                onCancel={handleCancel}
+                isLoading={isLoading}
+              />
+            )}
+          </div>
+
+          <div>
+            {selectedCustomerId && (
+              <>
+                <CustomerBalanceCard customerId={selectedCustomerId} />
+                <div className="mt-6">
+                  <PaymentHistory customerId={selectedCustomerId} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
