@@ -51,6 +51,7 @@ export function Bottles() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [lastOrder, setLastOrder] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load all necessary data on mount
   useEffect(() => {
@@ -209,6 +210,7 @@ export function Bottles() {
             onClick={() => {
               setActiveTab(TABS.ORDERS);
               setShowReceipt(false);
+              setSearchQuery(''); // Reset search when switching tabs
             }}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === TABS.ORDERS
@@ -222,6 +224,7 @@ export function Bottles() {
             onClick={() => {
               setActiveTab(TABS.RETURNS);
               setShowReceipt(false);
+              setSearchQuery(''); // Reset search when switching tabs
             }}
             className={`py-4 px-1 border-b-2 font-medium text-sm ${
               activeTab === TABS.RETURNS
@@ -272,6 +275,32 @@ export function Bottles() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('placeOrder')}</h2>
 
             <div className="mb-4">
+              <label htmlFor="search-customer" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('search')} {t('customer').toLowerCase()}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="search-customer"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('search') + ' ' + t('customers').toLowerCase() + '...'}
+                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-2"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-4">
               <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
                 {t('customer')} <span className="text-red-500">*</span>
               </label>
@@ -282,11 +311,26 @@ export function Bottles() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
                 <option value="">{t('selectCustomer')}</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.phone}
-                  </option>
-                ))}
+                {(() => {
+                  const filtered = customers.filter((customer) => {
+                    if (!searchQuery.trim()) return true;
+                    const query = searchQuery.toLowerCase().trim();
+                    const nameMatch = customer.name.toLowerCase().includes(query);
+                    const phoneMatch = customer.phone.includes(query);
+                    return nameMatch || phoneMatch;
+                  });
+                  return filtered.length === 0 && searchQuery.trim() ? (
+                    <option value="" disabled>
+                      {t('noResults') || 'No customers found'}
+                    </option>
+                  ) : (
+                    filtered.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.phone}
+                      </option>
+                    ))
+                  );
+                })()}
               </select>
             </div>
 
@@ -294,7 +338,10 @@ export function Bottles() {
               <OrderForm
                 customerId={selectedCustomerId}
                 onSubmit={handleOrderSubmit}
-                onCancel={() => setSelectedCustomerId('')}
+                onCancel={() => {
+                  setSelectedCustomerId('');
+                  setSearchQuery(''); // Clear search when canceling
+                }}
                 isLoading={isLoading}
               />
             )}
@@ -320,6 +367,32 @@ export function Bottles() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('returnBottles')}</h2>
 
             <div className="mb-4">
+              <label htmlFor="search-customer-return" className="block text-sm font-medium text-gray-700 mb-2">
+                {t('search')} {t('customer').toLowerCase()}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="search-customer-return"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('search') + ' ' + t('customers').toLowerCase() + '...'}
+                  className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm mb-2"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-4">
               <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
                 {t('customer')} <span className="text-red-500">*</span>
               </label>
@@ -330,11 +403,37 @@ export function Bottles() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
                 <option value="">{t('selectCustomer')}</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.phone}
-                  </option>
-                ))}
+                {(() => {
+                  const filtered = customers.filter((customer) => {
+                    // Filter by search query
+                    if (searchQuery.trim()) {
+                      const query = searchQuery.toLowerCase().trim();
+                      if (!customer.name.toLowerCase().includes(query) && !customer.phone.includes(query)) {
+                        return false;
+                      }
+                    }
+                    // Only show customers who have orders with returnable products
+                    const customerOrders = orders.filter((o) => o.customerId === customer.id);
+                    if (customerOrders.length === 0) return false;
+                    
+                    // Check if any order has a returnable product
+                    return customerOrders.some((order) => {
+                      const product = products.find((p) => p.id === order.productId);
+                      return product && product.isReturnable !== false; // Default to true if not set
+                    });
+                  });
+                  return filtered.length === 0 && searchQuery.trim() ? (
+                    <option value="" disabled>
+                      {t('noResults') || 'No customers found'}
+                    </option>
+                  ) : (
+                    filtered.map((customer) => (
+                      <option key={customer.id} value={customer.id}>
+                        {customer.name} - {customer.phone}
+                      </option>
+                    ))
+                  );
+                })()}
               </select>
             </div>
 
@@ -343,7 +442,10 @@ export function Bottles() {
                 customerId={selectedCustomerId}
                 maxReturnable={getMaxReturnable(selectedCustomerId)}
                 onSubmit={handleReturnSubmit}
-                onCancel={() => setSelectedCustomerId('')}
+                onCancel={() => {
+                  setSelectedCustomerId('');
+                  setSearchQuery(''); // Clear search when canceling
+                }}
                 isLoading={isLoading}
               />
             )}

@@ -259,3 +259,162 @@ export function exportToPDF(title, data, headers) {
     document.body.removeChild(printContainer);
   }, 1000);
 }
+
+/**
+ * Calculate days since last order
+ * @param {import('../orders/types.js').Order[]} customerOrders - Orders for a customer
+ * @returns {number | null} Days since last order, or null if no orders
+ */
+function calculateDaysSinceLastOrder(customerOrders) {
+  if (!customerOrders || customerOrders.length === 0) {
+    return null;
+  }
+  
+  const lastOrder = customerOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  const lastOrderDate = new Date(lastOrder.createdAt);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  lastOrderDate.setHours(0, 0, 0, 0);
+  
+  const diffTime = today - lastOrderDate;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+}
+
+/**
+ * Calculate average order quantity
+ * @param {import('../orders/types.js').Order[]} customerOrders - Orders for a customer
+ * @returns {number} Average order quantity (rounded to 2 decimal places)
+ */
+function calculateAverageOrderQuantity(customerOrders) {
+  if (!customerOrders || customerOrders.length === 0) {
+    return 0;
+  }
+  
+  const totalQuantity = customerOrders.reduce((sum, order) => sum + order.quantity, 0);
+  const average = totalQuantity / customerOrders.length;
+  return Math.round(average * 100) / 100;
+}
+
+/**
+ * Find most frequently ordered product
+ * @param {import('../orders/types.js').Order[]} customerOrders - Orders for a customer
+ * @param {import('../products/types.js').Product[]} products - All products
+ * @returns {string} Product name or "N/A" if no orders
+ */
+function findMostFrequentProduct(customerOrders, products) {
+  if (!customerOrders || customerOrders.length === 0) {
+    return 'N/A';
+  }
+  
+  // Count occurrences of each productId
+  const productCounts = {};
+  customerOrders.forEach((order) => {
+    productCounts[order.productId] = (productCounts[order.productId] || 0) + 1;
+  });
+  
+  // Find the productId with the highest count
+  const mostFrequentProductId = Object.keys(productCounts).reduce((a, b) =>
+    productCounts[a] > productCounts[b] ? a : b
+  );
+  
+  // Find product name
+  const product = products.find((p) => p.id === mostFrequentProductId);
+  return product ? product.name : 'N/A';
+}
+
+/**
+ * Get last order date
+ * @param {import('../orders/types.js').Order[]} customerOrders - Orders for a customer
+ * @returns {string | null} Last order date formatted as YYYY-MM-DD, or null if no orders
+ */
+function getLastOrderDate(customerOrders) {
+  if (!customerOrders || customerOrders.length === 0) {
+    return null;
+  }
+  
+  const lastOrder = customerOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  const date = new Date(lastOrder.createdAt);
+  return date.toISOString().split('T')[0];
+}
+
+/**
+ * Generate customer activity report
+ * @param {import('../customers/types.js').Customer[]} customers - All customers
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('../products/types.js').Product[]} products - All products
+ * @param {number | null} minDaysInactive - Minimum days inactive to filter (30, 60, 90, or null for all)
+ * @returns {import('./types.js').CustomerActivityReport[]} Customer activity report
+ */
+export function generateCustomerActivityReport(customers, orders, products, minDaysInactive = null) {
+  const now = new Date();
+  
+  return customers
+    .map((customer) => {
+      // Get all orders for this customer
+      const customerOrders = orders.filter((o) => o.customerId === customer.id);
+      
+      // Calculate metrics
+      const daysSinceLastOrder = calculateDaysSinceLastOrder(customerOrders);
+      const lastOrderDate = getLastOrderDate(customerOrders);
+      const averageOrderQuantity = calculateAverageOrderQuantity(customerOrders);
+      const mostFrequentProduct = findMostFrequentProduct(customerOrders, products);
+      
+      // Determine inactivity classification
+      let inactivityStatus = 'active';
+      if (daysSinceLastOrder === null) {
+        inactivityStatus = 'no_orders';
+      } else if (daysSinceLastOrder >= 90) {
+        inactivityStatus = '90_days';
+      } else if (daysSinceLastOrder >= 60) {
+        inactivityStatus = '60_days';
+      } else if (daysSinceLastOrder >= 30) {
+        inactivityStatus = '30_days';
+      }
+      
+      return {
+        customerId: customer.id,
+        customerName: customer.name,
+        phone: customer.phone,
+        lastOrderDate: lastOrderDate,
+        daysSinceLastOrder: daysSinceLastOrder,
+        averageOrderQuantity: averageOrderQuantity,
+        mostFrequentProduct: mostFrequentProduct,
+        inactivityStatus: inactivityStatus,
+      };
+    })
+    .filter((report) => {
+      // Filter based on minDaysInactive
+      // Always include customers with no orders (daysSinceLastOrder === null)
+      if (report.daysSinceLastOrder === null) {
+        return true;
+      }
+      
+      if (minDaysInactive === null) {
+        // Show all inactive customers (30+ days)
+        return report.daysSinceLastOrder >= 30;
+      }
+      
+      if (minDaysInactive === 30) {
+        return report.daysSinceLastOrder >= 30;
+      }
+      
+      if (minDaysInactive === 60) {
+        return report.daysSinceLastOrder >= 60;
+      }
+      
+      if (minDaysInactive === 90) {
+        return report.daysSinceLastOrder >= 90;
+      }
+      
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by days since last order (most inactive first)
+      if (a.daysSinceLastOrder === null && b.daysSinceLastOrder === null) return 0;
+      if (a.daysSinceLastOrder === null) return 1;
+      if (b.daysSinceLastOrder === null) return -1;
+      return b.daysSinceLastOrder - a.daysSinceLastOrder;
+    });
+}

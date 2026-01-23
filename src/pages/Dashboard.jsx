@@ -9,6 +9,7 @@ import { useTranslation } from '../shared/hooks/useTranslation.js';
 import * as cashService from '../features/cash/service.js';
 import { bottlesService } from '../features/bottles/slice.js';
 import { expensesService } from '../features/expenses/slice.js';
+import { waterQualityService } from '../features/waterQuality/slice.js';
 
 /**
  * Dashboard Widget Component
@@ -43,6 +44,7 @@ export function Dashboard() {
   const { transactions } = useSelector((state) => state.bottles);
   const { items: expenses } = useSelector((state) => state.expenses);
   const { cashBalance } = useSelector((state) => state.orders);
+  const { items: waterQualityEntries } = useSelector((state) => state.waterQuality);
 
   // Calculate today's deliveries (today's orders)
   const today = cashService.getTodayDate();
@@ -69,6 +71,13 @@ export function Dashboard() {
     return expenseDate === today;
   });
   const todayExpensesAmount = expensesService.calculateTotalExpenses(todayExpenses);
+
+  // Get water quality alerts
+  const criticalEntries = waterQualityService.getCriticalEntries(waterQualityEntries);
+  const warningEntries = waterQualityService.getEntriesWithAlerts(waterQualityEntries).filter(
+    (entry) => entry.status === 'warning'
+  );
+  const latestEntry = waterQualityService.getLatestEntry(waterQualityEntries);
 
   return (
     <div className="space-y-6">
@@ -115,6 +124,116 @@ export function Dashboard() {
           textColor="text-white"
         />
       </div>
+
+      {/* Water Quality Status Widget */}
+      {latestEntry && (
+        <div
+          className={`rounded-lg shadow-lg p-6 ${
+            latestEntry.status === 'normal'
+              ? 'bg-green-500'
+              : latestEntry.status === 'warning'
+              ? 'bg-yellow-500'
+              : 'bg-red-500'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className={`text-sm font-medium text-white opacity-90`}>
+                {t('recentWaterQuality')}
+              </p>
+              <p className={`text-lg font-semibold text-white mt-2`}>
+                {new Date(latestEntry.date).toLocaleDateString()}
+              </p>
+              <div className="mt-3 space-y-1">
+                <div className="flex justify-between text-sm text-white opacity-90">
+                  <span>pH:</span>
+                  <span className="font-semibold">{latestEntry.pH}</span>
+                </div>
+                <div className="flex justify-between text-sm text-white opacity-90">
+                  <span>TDS:</span>
+                  <span className="font-semibold">{latestEntry.tds} ppm</span>
+                </div>
+                <div className="flex justify-between text-sm text-white opacity-90">
+                  <span>{t('chlorine')}:</span>
+                  <span className="font-semibold">{latestEntry.chlorine}</span>
+                </div>
+              </div>
+              <div className="mt-3">
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    latestEntry.status === 'normal'
+                      ? 'bg-white text-green-600'
+                      : latestEntry.status === 'warning'
+                      ? 'bg-white text-yellow-600'
+                      : 'bg-white text-red-600'
+                  }`}
+                >
+                  {latestEntry.status === 'normal'
+                    ? t('normal')
+                    : latestEntry.status === 'warning'
+                    ? t('warning')
+                    : t('critical')}
+                </span>
+              </div>
+            </div>
+            <div className="text-white opacity-20 ml-4">
+              <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Water Quality Alerts */}
+      {(criticalEntries.length > 0 || warningEntries.length > 0) && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('waterQualityAlerts')}</h2>
+          {criticalEntries.length > 0 && (
+            <div className="mb-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <span className="text-red-600 font-bold text-lg mr-2">🔴</span>
+                  <span className="text-red-900 font-semibold">
+                    {t('criticalAlerts')}: {criticalEntries.length}
+                  </span>
+                </div>
+                <p className="text-sm text-red-700 mt-2">{t('criticalWaterQualityIssues')}</p>
+              </div>
+            </div>
+          )}
+          {warningEntries.length > 0 && (
+            <div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <span className="text-yellow-600 font-bold text-lg mr-2">🟡</span>
+                  <span className="text-yellow-900 font-semibold">
+                    {t('warnings')}: {warningEntries.length}
+                  </span>
+                </div>
+                <p className="text-sm text-yellow-700 mt-2">{t('minorWaterQualityIssues')}</p>
+              </div>
+            </div>
+          )}
+          {latestEntry && (
+            <div className="mt-4 text-sm text-gray-600">
+              {t('lastEntry')}: {new Date(latestEntry.date).toLocaleDateString()} -{' '}
+              {latestEntry.status === 'normal' ? (
+                <span className="text-green-600">{t('normal')}</span>
+              ) : latestEntry.status === 'warning' ? (
+                <span className="text-yellow-600">{t('warning')}</span>
+              ) : (
+                <span className="text-red-600">{t('critical')}</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Additional Details Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

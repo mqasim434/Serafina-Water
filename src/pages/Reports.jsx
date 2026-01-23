@@ -9,12 +9,14 @@ import { useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 import * as reportsService from '../features/reports/service.js';
 import * as cashService from '../features/cash/service.js';
+import { CustomerActivity } from '../features/reports/components/CustomerActivity.jsx';
 
 const REPORT_TYPES = {
   CUSTOMER_BOTTLES: 'customer_bottles',
   OUTSTANDING_BOTTLES: 'outstanding_bottles',
   DUE_AMOUNTS: 'due_amounts',
   CASH_FLOW: 'cash_flow',
+  CUSTOMER_ACTIVITY: 'customer_activity',
 };
 
 export function Reports() {
@@ -24,6 +26,7 @@ export function Reports() {
   const { items: orders } = useSelector((state) => state.orders);
   const { items: payments } = useSelector((state) => state.payments);
   const { items: expenses } = useSelector((state) => state.expenses);
+  const { items: products } = useSelector((state) => state.products);
 
   const [selectedReport, setSelectedReport] = useState(REPORT_TYPES.CUSTOMER_BOTTLES);
   const [startDate, setStartDate] = useState(cashService.getTodayDate());
@@ -89,6 +92,20 @@ export function Reports() {
           Balance: e.balance,
         }));
         break;
+      case REPORT_TYPES.CUSTOMER_ACTIVITY:
+        data = reportsService.generateCustomerActivityReport(customers, orders, products, null);
+        headers = ['Customer Name', 'Phone', 'Last Order Date', 'Days Since Last Order', 'Average Order Quantity', 'Most Frequent Product', 'Status'];
+        title = 'Customer Activity Report';
+        data = data.map((r) => ({
+          'Customer Name': r.customerName,
+          Phone: r.phone,
+          'Last Order Date': r.lastOrderDate || 'Never',
+          'Days Since Last Order': r.daysSinceLastOrder !== null ? r.daysSinceLastOrder : 'Never',
+          'Average Order Quantity': r.averageOrderQuantity.toFixed(2),
+          'Most Frequent Product': r.mostFrequentProduct,
+          Status: r.inactivityStatus,
+        }));
+        break;
     }
 
     reportsService.exportToPDF(title, data, headers);
@@ -152,6 +169,20 @@ export function Reports() {
           Expenses: e.expenses,
           'Net Cash': e.netCash,
           Balance: e.balance,
+        }));
+        break;
+      case REPORT_TYPES.CUSTOMER_ACTIVITY:
+        data = reportsService.generateCustomerActivityReport(customers, orders, products, null);
+        headers = ['Customer Name', 'Phone', 'Last Order Date', 'Days Since Last Order', 'Average Order Quantity', 'Most Frequent Product', 'Status'];
+        filename = 'customer_activity_report.csv';
+        data = data.map((r) => ({
+          'Customer Name': r.customerName,
+          Phone: r.phone,
+          'Last Order Date': r.lastOrderDate || 'Never',
+          'Days Since Last Order': r.daysSinceLastOrder !== null ? r.daysSinceLastOrder : 'Never',
+          'Average Order Quantity': r.averageOrderQuantity.toFixed(2),
+          'Most Frequent Product': r.mostFrequentProduct,
+          Status: r.inactivityStatus,
         }));
         break;
     }
@@ -373,6 +404,9 @@ export function Reports() {
           </div>
         );
 
+      case REPORT_TYPES.CUSTOMER_ACTIVITY:
+        return <CustomerActivity customers={customers} orders={orders} products={products} />;
+
       default:
         return null;
     }
@@ -412,6 +446,7 @@ export function Reports() {
           <option value={REPORT_TYPES.OUTSTANDING_BOTTLES}>{t('outstandingBottlesReport')}</option>
           <option value={REPORT_TYPES.DUE_AMOUNTS}>{t('dueAmountsReport')}</option>
           <option value={REPORT_TYPES.CASH_FLOW}>{t('cashFlowReport')}</option>
+          <option value={REPORT_TYPES.CUSTOMER_ACTIVITY}>{t('customerActivityReport')}</option>
         </select>
 
         {/* Date Range for Cash Flow */}

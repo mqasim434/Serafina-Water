@@ -36,6 +36,7 @@ export function Payments() {
 
   const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load payments, orders, and customers on mount - always ensure customers are loaded
   useEffect(() => {
@@ -83,6 +84,7 @@ export function Payments() {
   const handleRecordPayment = () => {
     setViewMode(VIEW_MODES.PAYMENT);
     setSelectedCustomerId('');
+    setSearchQuery(''); // Clear search when switching to payment mode
   };
 
   const handleCustomerSelect = (customerId) => {
@@ -119,6 +121,7 @@ export function Payments() {
   const handleCancel = () => {
     setViewMode(VIEW_MODES.LIST);
     setSelectedCustomerId('');
+    setSearchQuery(''); // Clear search when canceling
   };
 
   const getOutstandingBalance = (customerId) => {
@@ -127,9 +130,23 @@ export function Payments() {
 
   // Get all customers with balances
   const customerBalances = paymentsService.getAllCustomerBalances(orders, payments, customers);
-  const customersWithBalance = customerBalances
+  let customersWithBalance = customerBalances
     .filter((cb) => cb.balance > 0)
     .sort((a, b) => b.balance - a.balance);
+  
+  // Apply search filter
+  const filteredCustomersWithBalance = searchQuery.trim() 
+    ? (() => {
+        const query = searchQuery.toLowerCase().trim();
+        return customersWithBalance.filter((cb) => {
+          const customer = customers.find((c) => c.id === cb.customerId);
+          if (!customer) return false;
+          const matchesName = customer.name.toLowerCase().includes(query);
+          const matchesPhone = customer.phone.includes(query);
+          return matchesName || matchesPhone;
+        });
+      })()
+    : customersWithBalance;
 
   if (isLoading && payments.length === 0) {
     return (
@@ -154,6 +171,30 @@ export function Payments() {
         </button>
       </div>
 
+      {viewMode === VIEW_MODES.LIST && (
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={t('search') + ' ' + t('customers').toLowerCase() + '...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
@@ -170,12 +211,12 @@ export function Payments() {
               </h2>
             </div>
             <div className="divide-y divide-gray-200">
-              {customersWithBalance.length === 0 ? (
+              {filteredCustomersWithBalance.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  {t('noPayments')}
+                  {searchQuery.trim() ? t('noResults') || 'No results found' : t('noPayments')}
                 </div>
               ) : (
-                customersWithBalance.map((balance) => {
+                filteredCustomersWithBalance.map((balance) => {
                   const customer = customers.find((c) => c.id === balance.customerId);
                   if (!customer) return null;
                   return (

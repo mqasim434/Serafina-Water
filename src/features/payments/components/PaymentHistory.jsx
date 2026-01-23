@@ -52,7 +52,14 @@ export function PaymentHistory({ customerId }) {
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  {new Date(payment.createdAt).toLocaleString()}
+                  {new Date(payment.createdAt).toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
                 </p>
                 {payment.notes && (
                   <p className="text-sm text-gray-600 mt-1">{payment.notes}</p>

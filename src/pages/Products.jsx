@@ -36,6 +36,7 @@ export function Products() {
     description: '',
     price: '',
     isActive: true,
+    isReturnable: true,
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -66,6 +67,7 @@ export function Products() {
       description: '',
       price: '',
       isActive: true,
+      isReturnable: true,
     });
     setFormErrors({});
     setViewMode(VIEW_MODES.ADD);
@@ -79,6 +81,7 @@ export function Products() {
       description: product.description || '',
       price: product.price || '',
       isActive: product.isActive,
+      isReturnable: product.isReturnable !== undefined ? product.isReturnable : true,
     });
     setFormErrors({});
     setViewMode(VIEW_MODES.EDIT);
@@ -166,6 +169,7 @@ export function Products() {
       description: '',
       price: '',
       isActive: true,
+      isReturnable: true,
     });
     setFormErrors({});
   };
@@ -192,7 +196,7 @@ export function Products() {
             onClick={handleAdd}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {t('addProduct')}
+            {t('Add Product')}
           </button>
         )}
       </div>
@@ -363,6 +367,19 @@ export function Products() {
               />
               <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
                 {t('active')}
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                id="isReturnable"
+                type="checkbox"
+                checked={formData.isReturnable}
+                onChange={(e) => setFormData({ ...formData, isReturnable: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isReturnable" className="ml-2 block text-sm text-gray-900">
+                {t('returnable') || 'Returnable'}
               </label>
             </div>
 

@@ -40,12 +40,12 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading }) {
 
   const [errors, setErrors] = useState({});
 
-  // Calculate total when product, quantity, or price changes
+  // Calculate total when product, quantity, or price changes (round to 2 decimal places)
   const totalAmount = formData.productId && formData.quantity && formData.price
-    ? parseFloat(formData.quantity) * parseFloat(formData.price)
+    ? Math.round(parseFloat(formData.quantity) * parseFloat(formData.price) * 100) / 100
     : 0;
 
-  const outstandingAmount = totalAmount - (parseFloat(formData.amountPaid) || 0);
+  const outstandingAmount = Math.round((totalAmount - (parseFloat(formData.amountPaid) || 0)) * 100) / 100;
 
   // Set default price when product is selected
   useEffect(() => {

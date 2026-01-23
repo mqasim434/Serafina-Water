@@ -100,23 +100,49 @@ export async function createPayment(data, existingPayments, createdBy) {
  * @param {string} customerId - Customer ID
  * @param {import('../orders/types.js').Order[]} orders - All orders
  * @param {import('./types.js').Payment[]} payments - All payments
+ * @param {import('../customers/types.js').Customer[]} customers - All customers
  * @returns {import('./types.js').CustomerBalance} Customer balance
  */
 export function calculateCustomerBalance(customerId, orders, payments, customers) {
   // Get customer opening balance
   const customer = customers?.find((c) => c.id === customerId);
-  const openingBalance = customer?.openingBalance || 0;
+  const openingBalance = Math.round((customer?.openingBalance || 0) * 100) / 100;
 
-  // Calculate total from orders
-  const customerOrders = orders.filter((o) => o.customerId === customerId);
-  const totalOrders = customerOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  // Get all orders for this customer
+  const customerOrders = (orders || []).filter((o) => o && o.customerId === customerId);
+  
+  // Calculate total from orders (sum of totalAmount) - round to 2 decimal places
+  // Each order's totalAmount represents the full amount the customer owes for that order
+  let totalOrders = 0;
+  customerOrders.forEach((order) => {
+    if (order && typeof order.totalAmount === 'number') {
+      const orderAmount = Math.max(0, order.totalAmount); // Ensure non-negative
+      totalOrders = Math.round((totalOrders + orderAmount) * 100) / 100;
+    }
+  });
 
-  // Calculate total payments
-  const customerPayments = payments.filter((p) => p.customerId === customerId);
-  const totalPayments = customerPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  // Get all payments for this customer
+  const customerPayments = (payments || []).filter((p) => p && p.customerId === customerId);
+  
+  // Calculate total payments (sum of all payment amounts) - round to 2 decimal places
+  // This includes:
+  // 1. Payments made at order time (when order was created with amountPaid > 0)
+  // 2. Standalone payments (made later through the Payments page)
+  let totalPayments = 0;
+  customerPayments.forEach((payment) => {
+    if (payment && typeof payment.amount === 'number') {
+      const paymentAmount = Math.max(0, payment.amount); // Ensure non-negative
+      totalPayments = Math.round((totalPayments + paymentAmount) * 100) / 100;
+    }
+  });
 
-  // Calculate balance (opening balance + orders - payments)
-  const balance = openingBalance + totalOrders - totalPayments;
+  // Calculate balance: Opening Balance + Total Orders - Total Payments
+  // Formula explanation:
+  // - Opening Balance: Initial debt/credit when customer was created
+  // - Total Orders: Sum of all order totalAmounts (what customer owes)
+  // - Total Payments: Sum of all payments made (what customer has paid)
+  // Result: Positive = customer owes money, Negative = customer has credit
+  const balance = Math.round((openingBalance + totalOrders - totalPayments) * 100) / 100;
 
   return {
     customerId,
@@ -132,11 +158,84 @@ export function calculateCustomerBalance(customerId, orders, payments, customers
  * @param {string} customerId - Customer ID
  * @param {import('../orders/types.js').Order[]} orders - All orders
  * @param {import('./types.js').Payment[]} payments - All payments
+ * @param {import('../customers/types.js').Customer[]} customers - All customers
  * @returns {number} Outstanding balance (can be negative if overpaid)
  */
 export function calculateOutstandingBalance(customerId, orders, payments, customers) {
   const balance = calculateCustomerBalance(customerId, orders, payments, customers);
   return balance.balance;
+}
+
+/**
+ * Verify customer balance calculation (for debugging)
+ * This provides a detailed breakdown of the balance calculation
+ * @param {string} customerId - Customer ID
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('./types.js').Payment[]} payments - All payments
+ * @param {import('../customers/types.js').Customer[]} customers - All customers
+ * @returns {Object} Detailed breakdown of balance calculation
+ */
+export function verifyCustomerBalance(customerId, orders, payments, customers) {
+  const customer = customers?.find((c) => c.id === customerId);
+  const customerOrders = orders.filter((o) => o.customerId === customerId);
+  const customerPayments = payments.filter((p) => p.customerId === customerId);
+  
+  const orderBreakdown = customerOrders.map((order) => ({
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    totalAmount: order.totalAmount || 0,
+    amountPaid: order.amountPaid || 0,
+    outstandingAmount: order.outstandingAmount || 0,
+    date: order.createdAt,
+  }));
+  
+  const paymentBreakdown = customerPayments.map((payment) => ({
+    paymentId: payment.id,
+    amount: payment.amount || 0,
+    orderId: payment.orderId || null,
+    date: payment.createdAt,
+  }));
+  
+  const balance = calculateCustomerBalance(customerId, orders, payments, customers);
+  
+  // Alternative calculation: Sum of outstanding amounts from orders
+  const sumOfOutstandingAmounts = Math.round(
+    customerOrders.reduce((sum, order) => sum + (order.outstandingAmount || 0), 0) * 100
+  ) / 100;
+  
+  // Standalone payments (not linked to orders)
+  const standalonePayments = Math.round(
+    customerPayments
+      .filter((p) => !p.orderId)
+      .reduce((sum, payment) => sum + (payment.amount || 0), 0) * 100
+  ) / 100;
+  
+  // Alternative balance: Opening + Outstanding from orders - Standalone payments
+  const alternativeBalance = Math.round(
+    ((customer?.openingBalance || 0) + sumOfOutstandingAmounts - standalonePayments) * 100
+  ) / 100;
+  
+  return {
+    customerId,
+    customerName: customer?.name || 'Unknown',
+    openingBalance: customer?.openingBalance || 0,
+    orderBreakdown,
+    paymentBreakdown,
+    calculatedBalance: balance,
+    alternativeCalculation: {
+      sumOfOutstandingAmounts,
+      standalonePayments,
+      alternativeBalance,
+    },
+    verification: {
+      ordersCount: customerOrders.length,
+      paymentsCount: customerPayments.length,
+      totalOrdersAmount: balance.totalOrders,
+      totalPaymentsAmount: balance.totalPayments,
+      finalBalance: balance.balance,
+      matchesAlternative: Math.abs(balance.balance - alternativeBalance) < 0.01,
+    },
+  };
 }
 
 /**

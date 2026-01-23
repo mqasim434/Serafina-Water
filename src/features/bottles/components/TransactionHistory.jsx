@@ -65,7 +65,14 @@ export function TransactionHistory({ customerId }) {
                       {transaction.quantity} {t('bottles')}
                     </span>
                     <span className="text-sm text-gray-500">
-                      {new Date(transaction.createdAt).toLocaleString()}
+                      {new Date(transaction.createdAt).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
                     </span>
                   </div>
                   {transaction.notes && (

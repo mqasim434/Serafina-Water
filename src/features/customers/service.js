@@ -155,6 +155,11 @@ export async function updateCustomer(id, data, existingCustomers) {
  * @returns {Promise<void>}
  */
 export async function deleteCustomer(id, existingCustomers) {
+  // Delete the document from Firestore
+  const { deleteDocument } = await import('../../shared/services/firestore.js');
+  await deleteDocument(STORAGE_KEY, id);
+  
+  // Also update the array (for consistency, though Firestore is source of truth)
   const updatedCustomers = existingCustomers.filter((c) => c.id !== id);
   await saveCustomers(updatedCustomers);
 }

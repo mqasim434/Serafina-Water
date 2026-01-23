@@ -8,6 +8,7 @@
  * Order object
  * @typedef {Object} Order
  * @property {string} id - Unique order identifier
+ * @property {number} orderNumber - Integer order number (auto-increment, never reused)
  * @property {string} customerId - Customer ID
  * @property {string} productId - Product ID
  * @property {number} quantity - Number of bottles ordered

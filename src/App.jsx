@@ -20,6 +20,7 @@ import { CashManagement } from './pages/CashManagement.jsx';
 import { Expenses } from './pages/Expenses.jsx';
 import { Reports } from './pages/Reports.jsx';
 import { Settings } from './pages/Settings.jsx';
+import { WaterQuality } from './pages/WaterQuality.jsx';
 import { setUser, setToken, setLoading } from './features/auth/slice.js';
 import { getCurrentAuthUser, loadToken } from './features/auth/service.js';
 import { setLanguage } from './features/i18n/slice.js';
@@ -166,6 +167,16 @@ function AppRoutes() {
           <ProtectedRoute requiredRole="admin">
             <Layout>
               <Settings />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/water-quality"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <WaterQuality />
             </Layout>
           </ProtectedRoute>
         }

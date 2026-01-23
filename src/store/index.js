@@ -13,6 +13,7 @@ import ordersReducer from '../features/orders/slice.js';
 import paymentsReducer from '../features/payments/slice.js';
 import expensesReducer from '../features/expenses/slice.js';
 import settingsReducer from '../features/settings/slice.js';
+import waterQualityReducer from '../features/waterQuality/slice.js';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     payments: paymentsReducer,
     expenses: expensesReducer,
     settings: settingsReducer,
+    waterQuality: waterQualityReducer,
   },
 });
 

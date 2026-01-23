@@ -11,10 +11,49 @@ import * as bottlesService from '../bottles/service.js';
 const STORAGE_KEYS = {
   ORDERS: 'orders_data',
   CASH_BALANCE: 'cash_balance',
+  ORDER_NUMBER: 'order_number_counter',
 };
 
 // Default price per bottle (can be made configurable)
 const DEFAULT_PRICE_PER_BOTTLE = 50;
+
+/**
+ * Get next order number (integer, auto-increment, never reused)
+ * @returns {Promise<number>} Next order number
+ */
+export async function getNextOrderNumber() {
+  const { getDocument, setDocument } = await import('../../shared/services/firestore.js');
+  
+  try {
+    // Get current order number counter
+    const counterDoc = await getDocument(STORAGE_KEYS.ORDER_NUMBER, 'counter');
+    let currentNumber = 0;
+    
+    if (counterDoc && counterDoc.lastOrderNumber !== undefined) {
+      currentNumber = counterDoc.lastOrderNumber;
+    }
+    
+    // Increment and save
+    const nextNumber = currentNumber + 1;
+    await setDocument(STORAGE_KEYS.ORDER_NUMBER, 'counter', { lastOrderNumber: nextNumber }, true);
+    
+    return nextNumber;
+  } catch (error) {
+    console.error('Error getting next order number:', error);
+    // Fallback: calculate from existing orders
+    const orders = await loadOrders();
+    if (orders.length === 0) {
+      // First order
+      await setDocument(STORAGE_KEYS.ORDER_NUMBER, 'counter', { lastOrderNumber: 1 }, true);
+      return 1;
+    }
+    // Find max order number from existing orders
+    const maxOrderNumber = Math.max(...orders.map(o => o.orderNumber || 0));
+    const nextNumber = maxOrderNumber + 1;
+    await setDocument(STORAGE_KEYS.ORDER_NUMBER, 'counter', { lastOrderNumber: nextNumber }, true);
+    return nextNumber;
+  }
+}
 
 /**
  * Generate unique ID for order
@@ -64,10 +103,10 @@ export async function saveCashBalance(balance) {
  * Calculate order total
  * @param {number} quantity - Number of bottles
  * @param {number} price - Price per unit
- * @returns {number} Total amount
+ * @returns {number} Total amount (rounded to 2 decimal places)
  */
 export function calculateOrderTotal(quantity, price) {
-  return quantity * price;
+  return Math.round((quantity * price) * 100) / 100;
 }
 
 /**
@@ -128,15 +167,19 @@ export async function createOrder(
     throw new Error(validation.error);
   }
 
-  // Calculate total
-  const totalAmount = calculateOrderTotal(data.quantity, data.price);
-  const amountPaid = data.amountPaid || 0;
-  const outstandingAmount = totalAmount - amountPaid;
+  // Calculate total (round to 2 decimal places to avoid floating point errors)
+  const totalAmount = Math.round(calculateOrderTotal(data.quantity, data.price) * 100) / 100;
+  const amountPaid = Math.round((data.amountPaid || 0) * 100) / 100;
+  const outstandingAmount = Math.round((totalAmount - amountPaid) * 100) / 100;
 
+  // Get next order number
+  const orderNumber = await getNextOrderNumber();
+  
   // Create order
   const now = new Date().toISOString();
   const newOrder = {
     id: generateOrderId(),
+    orderNumber: orderNumber, // Integer order number
     customerId: data.customerId,
     productId: data.productId,
     quantity: data.quantity,

@@ -22,11 +22,14 @@ import {
   updateCategoryInState,
   removeCategory,
 } from '../features/expenses/slice.js';
+import { waterQualityService } from '../features/waterQuality/slice.js';
+import { setRanges } from '../features/waterQuality/slice.js';
 
 const SETTINGS_SECTIONS = {
   COMPANY: 'company',
   LANGUAGE: 'language',
   CATEGORIES: 'categories',
+  WATER_QUALITY: 'water_quality',
 };
 
 export function Settings() {
@@ -35,6 +38,7 @@ export function Settings() {
   const { settings, isLoading, error } = useSelector((state) => state.settings);
   const { categories } = useSelector((state) => state.expenses);
   const { items: expenses } = useSelector((state) => state.expenses);
+  const { ranges: waterQualityRanges } = useSelector((state) => state.waterQuality);
 
   const [activeSection, setActiveSection] = useState(SETTINGS_SECTIONS.COMPANY);
   const [formData, setFormData] = useState({
@@ -46,13 +50,26 @@ export function Settings() {
     defaultLanguage: 'en',
   });
 
+  const [waterQualityFormData, setWaterQualityFormData] = useState({
+    pHMin: 6.5,
+    pHMax: 8.5,
+    tdsMax: 300,
+    chlorineMin: 0.2,
+    chlorineMax: 2.0,
+    warningTolerance: 10,
+  });
+
   // Load settings on mount
   useEffect(() => {
     async function loadData() {
       dispatch(setLoading(true));
       try {
-        const loadedSettings = await settingsService.loadSettings();
+        const [loadedSettings, loadedRanges] = await Promise.all([
+          settingsService.loadSettings(),
+          waterQualityService.loadWaterQualityRanges(),
+        ]);
         dispatch(setSettings(loadedSettings));
+        dispatch(setRanges(loadedRanges));
         setFormData({
           companyName: loadedSettings.companyInfo?.name || '',
           companyAddress: loadedSettings.companyInfo?.address || '',
@@ -60,6 +77,14 @@ export function Settings() {
           companyEmail: loadedSettings.companyInfo?.email || '',
           companyWebsite: loadedSettings.companyInfo?.website || '',
           defaultLanguage: loadedSettings.defaultLanguage || 'en',
+        });
+        setWaterQualityFormData({
+          pHMin: loadedRanges.pHMin || 6.5,
+          pHMax: loadedRanges.pHMax || 8.5,
+          tdsMax: loadedRanges.tdsMax || 300,
+          chlorineMin: loadedRanges.chlorineMin || 0.2,
+          chlorineMax: loadedRanges.chlorineMax || 2.0,
+          warningTolerance: loadedRanges.warningTolerance || 10,
         });
       } catch (err) {
         dispatch(setError(err.message));
@@ -150,6 +175,28 @@ export function Settings() {
     }
   };
 
+  const handleWaterQualitySubmit = async (e) => {
+    e.preventDefault();
+    dispatch(setLoading(true));
+    try {
+      const updatedRanges = {
+        pHMin: parseFloat(waterQualityFormData.pHMin),
+        pHMax: parseFloat(waterQualityFormData.pHMax),
+        tdsMax: parseFloat(waterQualityFormData.tdsMax),
+        chlorineMin: parseFloat(waterQualityFormData.chlorineMin),
+        chlorineMax: parseFloat(waterQualityFormData.chlorineMax),
+        warningTolerance: parseFloat(waterQualityFormData.warningTolerance),
+      };
+      await waterQualityService.saveWaterQualityRanges(updatedRanges);
+      dispatch(setRanges(updatedRanges));
+      alert(t('settingsSaved'));
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
   if (isLoading && !settings) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -184,7 +231,7 @@ export function Settings() {
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {t('companyInfo')}
+                {t('Company Info')}
               </button>
               <button
                 onClick={() => setActiveSection(SETTINGS_SECTIONS.LANGUAGE)}
@@ -206,6 +253,16 @@ export function Settings() {
               >
                 {t('categories')}
               </button>
+              <button
+                onClick={() => setActiveSection(SETTINGS_SECTIONS.WATER_QUALITY)}
+                className={`w-full text-left px-4 py-2 rounded-md ${
+                  activeSection === SETTINGS_SECTIONS.WATER_QUALITY
+                    ? 'bg-blue-100 text-blue-900'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {t('waterQualityRanges')}
+              </button>
             </div>
           </div>
         </div>
@@ -214,11 +271,11 @@ export function Settings() {
         <div className="lg:col-span-3">
           {activeSection === SETTINGS_SECTIONS.COMPANY && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('companyInfo')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('Company Info')}</h2>
               <form onSubmit={handleCompanySubmit} className="space-y-4">
                 <div>
                   <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-                    {t('companyName')}
+                    {t('Company Name')}
                   </label>
                   <input
                     type="text"
@@ -305,10 +362,10 @@ export function Settings() {
 
           {activeSection === SETTINGS_SECTIONS.LANGUAGE && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('defaultLanguage')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('Default Language')}</h2>
               <div>
                 <label htmlFor="defaultLanguage" className="block text-sm font-medium text-gray-700">
-                  {t('defaultLanguage')}
+                  {t('Default Language')}
                 </label>
                 <select
                   id="defaultLanguage"
@@ -329,6 +386,116 @@ export function Settings() {
               onUpdate={handleUpdateCategory}
               onDelete={handleDeleteCategory}
             />
+          )}
+
+          {activeSection === SETTINGS_SECTIONS.WATER_QUALITY && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('waterQualityRanges')}</h2>
+              <form onSubmit={handleWaterQualitySubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="pHMin" className="block text-sm font-medium text-gray-700">
+                      pH {t('minimum')}
+                    </label>
+                    <input
+                      type="number"
+                      id="pHMin"
+                      step="0.1"
+                      value={waterQualityFormData.pHMin}
+                      onChange={(e) =>
+                        setWaterQualityFormData((prev) => ({ ...prev, pHMin: e.target.value }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="pHMax" className="block text-sm font-medium text-gray-700">
+                      pH {t('maximum')}
+                    </label>
+                    <input
+                      type="number"
+                      id="pHMax"
+                      step="0.1"
+                      value={waterQualityFormData.pHMax}
+                      onChange={(e) =>
+                        setWaterQualityFormData((prev) => ({ ...prev, pHMax: e.target.value }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="tdsMax" className="block text-sm font-medium text-gray-700">
+                      TDS {t('maximum')} (ppm)
+                    </label>
+                    <input
+                      type="number"
+                      id="tdsMax"
+                      step="1"
+                      value={waterQualityFormData.tdsMax}
+                      onChange={(e) =>
+                        setWaterQualityFormData((prev) => ({ ...prev, tdsMax: e.target.value }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="chlorineMin" className="block text-sm font-medium text-gray-700">
+                      {t('chlorine')} {t('minimum')}
+                    </label>
+                    <input
+                      type="number"
+                      id="chlorineMin"
+                      step="0.1"
+                      value={waterQualityFormData.chlorineMin}
+                      onChange={(e) =>
+                        setWaterQualityFormData((prev) => ({ ...prev, chlorineMin: e.target.value }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="chlorineMax" className="block text-sm font-medium text-gray-700">
+                      {t('chlorine')} {t('maximum')}
+                    </label>
+                    <input
+                      type="number"
+                      id="chlorineMax"
+                      step="0.1"
+                      value={waterQualityFormData.chlorineMax}
+                      onChange={(e) =>
+                        setWaterQualityFormData((prev) => ({ ...prev, chlorineMax: e.target.value }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="warningTolerance" className="block text-sm font-medium text-gray-700">
+                      {t('warningTolerance')} (%)
+                    </label>
+                    <input
+                      type="number"
+                      id="warningTolerance"
+                      step="1"
+                      min="0"
+                      max="100"
+                      value={waterQualityFormData.warningTolerance}
+                      onChange={(e) =>
+                        setWaterQualityFormData((prev) => ({ ...prev, warningTolerance: e.target.value }))
+                      }
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                    <p className="mt-1 text-xs text-gray-500">{t('warningToleranceDescription')}</p>
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {t('save')}
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </div>

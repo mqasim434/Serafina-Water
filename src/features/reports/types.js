@@ -49,3 +49,16 @@
  * @property {number} totalExpenses - Total expenses
  * @property {number} netCashFlow - Net cash flow
  */
+
+/**
+ * Customer activity report
+ * @typedef {Object} CustomerActivityReport
+ * @property {string} customerId - Customer ID
+ * @property {string} customerName - Customer name
+ * @property {string} phone - Phone number
+ * @property {string | null} lastOrderDate - Last order date (YYYY-MM-DD) or null
+ * @property {number | null} daysSinceLastOrder - Days since last order or null
+ * @property {number} averageOrderQuantity - Average order quantity
+ * @property {string} mostFrequentProduct - Most frequently ordered product name
+ * @property {string} inactivityStatus - Inactivity status ('active', '30_days', '60_days', '90_days', 'no_orders')
+ */

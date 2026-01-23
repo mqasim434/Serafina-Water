@@ -31,9 +31,10 @@
  * Customer balance (amount owed)
  * @typedef {Object} CustomerBalance
  * @property {string} customerId - Customer ID
+ * @property {number} openingBalance - Opening balance (initial debt/credit)
  * @property {number} totalOrders - Total amount from orders
  * @property {number} totalPayments - Total amount paid
- * @property {number} balance - Outstanding balance (totalOrders - totalPayments)
+ * @property {number} balance - Outstanding balance (openingBalance + totalOrders - totalPayments)
  */
 
 /**

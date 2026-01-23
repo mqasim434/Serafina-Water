@@ -106,6 +106,7 @@ export async function createProduct(data, existingProducts) {
     description: (data.description || '').trim(),
     price: parseFloat(data.price) || 0,
     isActive: data.isActive !== undefined ? data.isActive : true,
+    isReturnable: data.isReturnable !== undefined ? data.isReturnable : true,
     createdAt: now,
     updatedAt: now,
   };
@@ -149,6 +150,7 @@ export async function updateProduct(id, data, existingProducts) {
     description: (data.description || '').trim(),
     price: parseFloat(data.price) || existingProducts[productIndex].price || 0,
     isActive: data.isActive !== undefined ? data.isActive : true,
+    isReturnable: data.isReturnable !== undefined ? data.isReturnable : (existingProducts[productIndex].isReturnable !== undefined ? existingProducts[productIndex].isReturnable : true),
     updatedAt: new Date().toISOString(),
   };
 

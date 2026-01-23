@@ -3,9 +3,10 @@
  * 
  * Business logic and calculations for authentication
  * Uses Firestore users collection for authentication
+ * Auth tokens and user session stored in localStorage (client-side only)
  */
 
-import { storageService } from '../../shared/services/storage.js';
+import { localStorageService } from '../../shared/services/localStorage.js';
 import * as usersService from '../users/service.js';
 
 const STORAGE_KEYS = {
@@ -54,48 +55,46 @@ export function hasRole(user, requiredRole) {
 }
 
 /**
- * Persist user to storage
+ * Persist user to localStorage (client-side only)
  * @param {import('./types.js').User} user - User to persist
  * @returns {Promise<void>}
  */
 export async function persistUser(user) {
-  await storageService.setItem(STORAGE_KEYS.USER, user);
+  localStorageService.setItem(STORAGE_KEYS.USER, user);
 }
 
 /**
- * Persist token to storage
+ * Persist token to localStorage (client-side only)
  * @param {string} token - Token to persist
  * @returns {Promise<void>}
  */
 export async function persistToken(token) {
-  await storageService.setItem(STORAGE_KEYS.TOKEN, token);
+  localStorageService.setItem(STORAGE_KEYS.TOKEN, token);
 }
 
 /**
- * Load user from storage
+ * Load user from localStorage
  * @returns {Promise<import('./types.js').User | null>}
  */
 export async function loadUser() {
-  return await storageService.getItem(STORAGE_KEYS.USER);
+  return localStorageService.getItem(STORAGE_KEYS.USER);
 }
 
 /**
- * Load token from storage
+ * Load token from localStorage
  * @returns {Promise<string | null>}
  */
 export async function loadToken() {
-  return await storageService.getItem(STORAGE_KEYS.TOKEN);
+  return localStorageService.getItem(STORAGE_KEYS.TOKEN);
 }
 
 /**
- * Clear persisted auth data
+ * Clear persisted auth data from localStorage
  * @returns {Promise<void>}
  */
 export async function clearAuthData() {
-  await Promise.all([
-    storageService.removeItem(STORAGE_KEYS.USER),
-    storageService.removeItem(STORAGE_KEYS.TOKEN),
-  ]);
+  localStorageService.removeItem(STORAGE_KEYS.USER);
+  localStorageService.removeItem(STORAGE_KEYS.TOKEN);
 }
 
 /**

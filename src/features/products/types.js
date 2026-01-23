@@ -13,6 +13,7 @@
  * @property {string} [description] - Optional description
  * @property {number} price - Default price for this product
  * @property {boolean} isActive - Whether product is active
+ * @property {boolean} isReturnable - Whether bottles of this product can be returned
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [updatedAt] - Last update timestamp (ISO string)
  */
@@ -25,6 +26,7 @@
  * @property {string} [description] - Optional description
  * @property {number} price - Default price for this product
  * @property {boolean} [isActive] - Whether product is active
+ * @property {boolean} [isReturnable] - Whether bottles of this product can be returned
  */
 
 /**
