@@ -10,6 +10,7 @@ import { useTranslation } from '../shared/hooks/useTranslation.js';
 import { PaymentForm } from '../features/payments/components/PaymentForm.jsx';
 import { PaymentHistory } from '../features/payments/components/PaymentHistory.jsx';
 import { CustomerBalanceCard } from '../features/payments/components/CustomerBalanceCard.jsx';
+import { CustomerSearch } from '../features/customers/components/CustomerSearch.jsx';
 import {
   setLoading,
   setPayments,
@@ -36,7 +37,7 @@ export function Payments() {
 
   const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(''); // Keep for list view search
 
   // Load payments, orders, and customers on mount - always ensure customers are loaded
   useEffect(() => {
@@ -84,7 +85,6 @@ export function Payments() {
   const handleRecordPayment = () => {
     setViewMode(VIEW_MODES.PAYMENT);
     setSelectedCustomerId('');
-    setSearchQuery(''); // Clear search when switching to payment mode
   };
 
   const handleCustomerSelect = (customerId) => {
@@ -121,7 +121,6 @@ export function Payments() {
   const handleCancel = () => {
     setViewMode(VIEW_MODES.LIST);
     setSelectedCustomerId('');
-    setSearchQuery(''); // Clear search when canceling
   };
 
   const getOutstandingBalance = (customerId) => {
@@ -141,9 +140,9 @@ export function Payments() {
         return customersWithBalance.filter((cb) => {
           const customer = customers.find((c) => c.id === cb.customerId);
           if (!customer) return false;
-          const matchesName = customer.name.toLowerCase().includes(query);
-          const matchesPhone = customer.phone.includes(query);
-          return matchesName || matchesPhone;
+          const name = (customer.name || '').toLowerCase();
+          const phone = (customer.phone || '').toString();
+          return name.includes(query) || phone.includes(query);
         });
       })()
     : customersWithBalance;
@@ -260,30 +259,22 @@ export function Payments() {
 
             {!selectedCustomerId && (
               <div className="mb-4">
-                <label htmlFor="customer" className="block text-sm font-medium text-gray-700">
-                  {t('selectCustomer')} <span className="text-red-500">*</span>
-                </label>
                 {customers.length === 0 ? (
-                  <div className="mt-1 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
                     {t('loadingCustomers') || 'Loading customers...'}
                   </div>
                 ) : (
-                  <select
-                    id="customer"
+                  <CustomerSearch
+                    customers={customers}
                     value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  >
-                    <option value="">{t('selectCustomer')}</option>
-                    {customers.map((customer) => {
+                    onChange={setSelectedCustomerId}
+                    required={true}
+                    placeholder={t('search') + ' ' + t('customer').toLowerCase() + '...'}
+                    getDisplayText={(customer) => {
                       const balance = getOutstandingBalance(customer.id);
-                      return (
-                        <option key={customer.id} value={customer.id}>
-                          {customer.name} {balance > 0 ? `- Rs. ${balance.toLocaleString()} ${t('outstandingBalance')}` : `(${t('noBalance') || 'No balance'})`}
-                        </option>
-                      );
-                    })}
-                  </select>
+                      return `${customer.name} ${balance > 0 ? `- Rs. ${balance.toLocaleString()}` : ''}`;
+                    }}
+                  />
                 )}
               </div>
             )}

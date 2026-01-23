@@ -175,15 +175,16 @@ export function findCustomerById(id, customers) {
  * @returns {import('./types.js').Customer[]} Filtered customers
  */
 export function searchCustomers(query, customers) {
-  if (!query || query.trim().length === 0) {
+  if (!query || !query.trim()) {
     return customers;
   }
 
   const lowerQuery = query.toLowerCase().trim();
-  return customers.filter(
-    (customer) =>
-      customer.name.toLowerCase().includes(lowerQuery) ||
-      customer.phone.includes(lowerQuery)
-  );
+  return customers.filter((customer) => {
+    if (!customer) return false;
+    const name = (customer.name || '').toLowerCase();
+    const phone = (customer.phone || '').toString();
+    return name.includes(lowerQuery) || phone.includes(lowerQuery);
+  });
 }
 
