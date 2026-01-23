@@ -78,15 +78,6 @@ export function CustomerDetails({ customer, onEdit, onDelete }) {
           </p>
         </div>
 
-        {(customer.openingBalance || customer.openingBalance === 0) && (
-          <div>
-            <label className="block text-sm font-medium text-gray-500">{t('openingBalance')}</label>
-            <p className="mt-1 text-sm font-semibold text-gray-900">
-              Rs. {(customer.openingBalance || 0).toLocaleString()}
-            </p>
-          </div>
-        )}
-
         <div className="border-t border-gray-200 pt-4">
           <label className="block text-sm font-semibold text-gray-700 mb-2">{t('productPrices') || t('bottlePrices')}</label>
           <div className="grid grid-cols-2 gap-3">

@@ -34,7 +34,6 @@
  * @property {PreferredLanguage} preferredLanguage - Preferred language (en or ur)
  * @property {CustomerProductPrices} productPrices - Product prices per product ID
  * @property {CustomerBottlePrices} [bottlePrices] - Legacy bottle prices (for backward compatibility)
- * @property {number} openingBalance - Opening balance (do not update after initial set)
  * @property {string} [createdAt] - Creation timestamp (ISO string)
  * @property {string} [updatedAt] - Last update timestamp (ISO string)
  */
@@ -47,7 +46,6 @@
  * @property {string} address - Address
  * @property {PreferredLanguage} preferredLanguage - Preferred language
  * @property {CustomerProductPrices} productPrices - Product prices per product ID
- * @property {number} [openingBalance] - Opening balance (only set on creation)
  */
 
 /**

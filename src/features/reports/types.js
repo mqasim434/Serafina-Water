@@ -28,7 +28,7 @@
  * @property {string} customerName - Customer name
  * @property {number} totalOrders - Total order amount
  * @property {number} totalPayments - Total payments made
- * @property {number} dueAmount - Outstanding amount
+ * @property {number} dueAmount - Outstanding amount (totalOrders - totalPayments)
  */
 
 /**

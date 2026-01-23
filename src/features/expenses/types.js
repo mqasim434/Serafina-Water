@@ -8,9 +8,10 @@
  * Expense object
  * @typedef {Object} Expense
  * @property {string} id - Unique expense identifier
- * @property {string} category - Expense category
- * @property {number} amount - Expense amount
+ * @property {string} title - Expense title
  * @property {string} [description] - Optional description
+ * @property {number} amount - Expense amount
+ * @property {string} date - Expense date in YYYY-MM-DD format
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the expense
  */
@@ -18,9 +19,10 @@
 /**
  * Expense form data
  * @typedef {Object} ExpenseFormData
- * @property {string} category - Expense category
- * @property {number} amount - Expense amount
+ * @property {string} title - Expense title
  * @property {string} [description] - Optional description
+ * @property {number} amount - Expense amount
+ * @property {string} date - Expense date in YYYY-MM-DD format
  */
 
 /**

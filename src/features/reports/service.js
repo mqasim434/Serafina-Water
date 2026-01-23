@@ -64,7 +64,6 @@ export function generateDueAmountsReport(customers, orders, payments) {
       return {
         customerId: customer.id,
         customerName: customer.name,
-        openingBalance: balance.openingBalance,
         totalOrders: balance.totalOrders,
         totalPayments: balance.totalPayments,
         dueAmount: balance.balance,

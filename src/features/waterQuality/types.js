@@ -9,6 +9,7 @@
  * @typedef {Object} WaterQualityEntry
  * @property {string} id - Unique entry identifier
  * @property {string} date - Date in YYYY-MM-DD format
+ * @property {string} time - Time in HH:MM format (24-hour)
  * @property {number} pH - pH level
  * @property {number} tds - TDS level (ppm)
  * @property {number} chlorine - Chlorine level
@@ -22,6 +23,7 @@
  * Water quality form data
  * @typedef {Object} WaterQualityFormData
  * @property {string} date - Date in YYYY-MM-DD format
+ * @property {string} time - Time in HH:MM format (24-hour)
  * @property {number} pH - pH level
  * @property {number} tds - TDS level (ppm)
  * @property {number} chlorine - Chlorine level

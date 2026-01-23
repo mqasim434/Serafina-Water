@@ -37,7 +37,6 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
     address: '',
     preferredLanguage: currentLanguage,
     productPrices: {},
-    openingBalance: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -86,7 +85,6 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
         address: customer.address || '',
         preferredLanguage: customer.preferredLanguage || currentLanguage,
         productPrices: productPrices,
-        openingBalance: customer.openingBalance || '',
       });
     } else {
       // Reset form for new customer - initialize productPrices with default prices from products
@@ -102,7 +100,6 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
         address: '',
         preferredLanguage: currentLanguage,
         productPrices: productPrices,
-        openingBalance: '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -314,37 +311,6 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
       {errors.general && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {errors.general}
-        </div>
-      )}
-
-      {/* Opening Balance - Only for new customers */}
-      {!customer && (
-        <div>
-          <label htmlFor="openingBalance" className="block text-sm font-medium text-gray-700">
-            {t('openingBalance')} (Rs.) {t('doNotUpdateAfterCreation')}
-          </label>
-          <input
-            type="number"
-            id="openingBalance"
-            name="openingBalance"
-            min="0"
-            step="0.01"
-            value={formData.openingBalance}
-            onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="0"
-          />
-          <p className="mt-1 text-xs text-gray-500">{t('openingBalanceNote')}</p>
-        </div>
-      )}
-
-      {customer && (
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-sm text-gray-600">
-            <span className="font-medium">{t('openingBalance')}:</span> Rs.{' '}
-            {(customer.openingBalance || 0).toLocaleString()}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">{t('openingBalanceNotEditable')}</p>
         </div>
       )}
 

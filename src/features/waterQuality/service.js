@@ -229,6 +229,7 @@ export async function createWaterQualityEntry(data, existingEntries, ranges, cre
   const newEntry = {
     id: generateWaterQualityId(),
     date: data.date,
+    time: data.time || new Date().toTimeString().slice(0, 5), // Default to current time if not provided
     pH: data.pH,
     tds: data.tds,
     chlorine: data.chlorine,

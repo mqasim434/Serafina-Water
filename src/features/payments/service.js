@@ -104,10 +104,6 @@ export async function createPayment(data, existingPayments, createdBy) {
  * @returns {import('./types.js').CustomerBalance} Customer balance
  */
 export function calculateCustomerBalance(customerId, orders, payments, customers) {
-  // Get customer opening balance
-  const customer = customers?.find((c) => c.id === customerId);
-  const openingBalance = Math.round((customer?.openingBalance || 0) * 100) / 100;
-
   // Get all orders for this customer
   const customerOrders = (orders || []).filter((o) => o && o.customerId === customerId);
   
@@ -136,17 +132,16 @@ export function calculateCustomerBalance(customerId, orders, payments, customers
     }
   });
 
-  // Calculate balance: Opening Balance + Total Orders - Total Payments
+  // Calculate balance: Total Orders - Total Payments
   // Formula explanation:
-  // - Opening Balance: Initial debt/credit when customer was created
   // - Total Orders: Sum of all order totalAmounts (what customer owes)
   // - Total Payments: Sum of all payments made (what customer has paid)
   // Result: Positive = customer owes money, Negative = customer has credit
-  const balance = Math.round((openingBalance + totalOrders - totalPayments) * 100) / 100;
+  const balance = Math.round((totalOrders - totalPayments) * 100) / 100;
 
   return {
     customerId,
-    openingBalance,
+    openingBalance: 0, // Kept for backward compatibility but always 0
     totalOrders,
     totalPayments,
     balance,
@@ -210,15 +205,15 @@ export function verifyCustomerBalance(customerId, orders, payments, customers) {
       .reduce((sum, payment) => sum + (payment.amount || 0), 0) * 100
   ) / 100;
   
-  // Alternative balance: Opening + Outstanding from orders - Standalone payments
+  // Alternative balance: Outstanding from orders - Standalone payments
   const alternativeBalance = Math.round(
-    ((customer?.openingBalance || 0) + sumOfOutstandingAmounts - standalonePayments) * 100
+    (sumOfOutstandingAmounts - standalonePayments) * 100
   ) / 100;
   
   return {
     customerId,
     customerName: customer?.name || 'Unknown',
-    openingBalance: customer?.openingBalance || 0,
+    openingBalance: 0, // No longer used
     orderBreakdown,
     paymentBreakdown,
     calculatedBalance: balance,

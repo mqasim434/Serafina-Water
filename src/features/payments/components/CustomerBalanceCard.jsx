@@ -40,21 +40,6 @@ export function CustomerBalanceCard({ customerId }) {
 
       <div className="p-6 space-y-4">
         <div className="flex justify-between">
-          <span className="text-sm text-gray-600">{t('openingBalance')}:</span>
-          <span
-            className={`text-sm font-medium ${
-              balance.openingBalance > 0
-                ? 'text-orange-600'
-                : balance.openingBalance < 0
-                ? 'text-green-600'
-                : 'text-gray-900'
-            }`}
-          >
-            Rs. {balance.openingBalance.toLocaleString()}
-          </span>
-        </div>
-
-        <div className="flex justify-between">
           <span className="text-sm text-gray-600">{t('totalOrders')}:</span>
           <span className="text-sm font-medium text-gray-900">
             Rs. {balance.totalOrders.toLocaleString()}
@@ -86,7 +71,7 @@ export function CustomerBalanceCard({ customerId }) {
             </span>
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            {t('balanceCalculation') || 'Calculation: Opening Balance + Total Orders - Total Payments'}
+            {t('balanceCalculation') || 'Calculation: Total Orders - Total Payments'}
           </div>
         </div>
       </div>

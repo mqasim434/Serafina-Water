@@ -143,6 +143,11 @@ export function Dashboard() {
               </p>
               <p className={`text-lg font-semibold text-white mt-2`}>
                 {new Date(latestEntry.date).toLocaleDateString()}
+                {latestEntry.time && (
+                  <span className="text-sm font-normal ml-2 opacity-90">
+                    {latestEntry.time}
+                  </span>
+                )}
               </p>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-sm text-white opacity-90">

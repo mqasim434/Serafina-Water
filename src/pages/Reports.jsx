@@ -64,11 +64,10 @@ export function Reports() {
         break;
       case REPORT_TYPES.DUE_AMOUNTS:
         data = reportsService.generateDueAmountsReport(customers, orders, payments);
-        headers = ['Customer Name', 'Opening Balance', 'Total Orders', 'Total Payments', 'Due Amount'];
+        headers = ['Customer Name', 'Total Orders', 'Total Payments', 'Due Amount'];
         title = 'Due Amounts Report';
         data = data.map((r) => ({
           'Customer Name': r.customerName,
-          'Opening Balance': r.openingBalance || 0,
           'Total Orders': r.totalOrders,
           'Total Payments': r.totalPayments,
           'Due Amount': r.dueAmount,
@@ -143,11 +142,10 @@ export function Reports() {
         break;
       case REPORT_TYPES.DUE_AMOUNTS:
         data = reportsService.generateDueAmountsReport(customers, orders, payments);
-        headers = ['Customer Name', 'Opening Balance', 'Total Orders', 'Total Payments', 'Due Amount'];
+        headers = ['Customer Name', 'Total Orders', 'Total Payments', 'Due Amount'];
         filename = 'due_amounts_report.csv';
         data = data.map((r) => ({
           'Customer Name': r.customerName,
-          'Opening Balance': r.openingBalance || 0,
           'Total Orders': r.totalOrders,
           'Total Payments': r.totalPayments,
           'Due Amount': r.dueAmount,
@@ -290,9 +288,6 @@ export function Reports() {
                     {t('customer')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('openingBalance')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('totalOrders')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -308,9 +303,6 @@ export function Reports() {
                     <tr key={report.customerId}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {report.customerName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Rs. {(report.openingBalance || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         Rs. {report.totalOrders.toLocaleString()}

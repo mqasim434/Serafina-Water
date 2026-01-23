@@ -4,14 +4,14 @@
  * Form for adding expenses
  */
 
-import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useState } from 'react';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import * as cashService from '../../../features/cash/service.js';
 
 /**
  * Expense Form props
  * @typedef {Object} ExpenseFormProps
- * @property {function(string, number, string): void} onSubmit - Submit handler
+ * @property {function(string, string, number, string): void} onSubmit - Submit handler (title, description, amount, date)
  * @property {function(): void} onCancel - Cancel handler
  * @property {boolean} isLoading - Loading state
  * @property {number} [availableCash] - Available cash balance
@@ -23,12 +23,13 @@ import { useTranslation } from '../../../shared/hooks/useTranslation.js';
  */
 export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
   const { t } = useTranslation();
-  const { categories } = useSelector((state) => state.expenses);
+  const today = cashService.getTodayDate();
 
   const [formData, setFormData] = useState({
-    category: '',
-    amount: '',
+    title: '',
     description: '',
+    amount: '',
+    date: today,
   });
 
   const [errors, setErrors] = useState({});
@@ -53,16 +54,20 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
     const amount = parseFloat(formData.amount);
     const newErrors = {};
 
-    if (!formData.category) {
-      newErrors.category = 'Category is required';
+    if (!formData.title || formData.title.trim() === '') {
+      newErrors.title = t('expenseTitleRequired') || 'Expense title is required';
+    }
+
+    if (!formData.date || formData.date.trim() === '') {
+      newErrors.date = t('dateRequired');
     }
 
     if (!formData.amount || amount <= 0) {
-      newErrors.amount = 'Expense amount must be greater than 0';
+      newErrors.amount = t('expenseAmountRequired') || 'Expense amount must be greater than 0';
     }
 
     if (availableCash !== undefined && amount > availableCash) {
-      newErrors.amount = `Amount cannot exceed available cash of ${availableCash.toLocaleString()}`;
+      newErrors.amount = t('expenseAmountExceedsCash') || `Amount cannot exceed available cash of ${availableCash.toLocaleString()}`;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -70,7 +75,7 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
       return;
     }
 
-    onSubmit(formData.category, amount, formData.description.trim());
+    onSubmit(formData.title.trim(), formData.description.trim(), amount, formData.date);
   };
 
   return (
@@ -87,26 +92,39 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
       )}
 
       <div>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-          {t('expenseCategory')} <span className="text-red-500">*</span>
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+          {t('expenseTitle') || 'Expense Title'} <span className="text-red-500">*</span>
         </label>
-        <select
-          id="category"
-          name="category"
-          value={formData.category}
+        <input
+          type="text"
+          id="title"
+          name="title"
+          value={formData.title}
           onChange={handleChange}
           className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-            errors.category ? 'border-red-300' : 'border-gray-300'
+            errors.title ? 'border-red-300' : 'border-gray-300'
           }`}
-        >
-          <option value="">{t('selectCategory')}</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-        {errors.category && <p className="mt-1 text-sm text-red-600">{errors.category}</p>}
+          placeholder={t('expenseTitle') || 'Enter expense title'}
+        />
+        {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+          {t('date')} <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="date"
+          id="date"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          max={today}
+          className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+            errors.date ? 'border-red-300' : 'border-gray-300'
+          }`}
+        />
+        {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
       </div>
 
       <div>

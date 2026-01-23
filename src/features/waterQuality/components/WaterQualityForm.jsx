@@ -27,8 +27,12 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
   const { items: entries } = useSelector((state) => state.waterQuality);
 
   const today = cashService.getTodayDate();
+  const now = new Date();
+  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  
   const [formData, setFormData] = useState({
     date: today,
+    time: currentTime,
     pH: '',
     tds: '',
     chlorine: '',
@@ -79,6 +83,10 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
       newErrors.date = t('dateRequired');
     }
 
+    if (!formData.time) {
+      newErrors.time = t('timeRequired') || 'Time is required';
+    }
+
     if (entryExists) {
       newErrors.date = t('entryExistsForDate');
     }
@@ -100,7 +108,7 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
       return;
     }
 
-    onSubmit(formData.date, pH, tds, chlorine);
+    onSubmit(formData.date, formData.time, pH, tds, chlorine);
   };
 
   return (
@@ -121,22 +129,41 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
         </div>
       </div>
 
-      <div>
-        <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-          {t('date')} <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="date"
-          id="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          max={today}
-          className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-            errors.date ? 'border-red-300' : 'border-gray-300'
-          }`}
-        />
-        {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+            {t('date')} <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="date"
+            id="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            max={today}
+            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+              errors.date ? 'border-red-300' : 'border-gray-300'
+            }`}
+          />
+          {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+            {t('time') || 'Time'} <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="time"
+            id="time"
+            name="time"
+            value={formData.time}
+            onChange={handleChange}
+            className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+              errors.time ? 'border-red-300' : 'border-gray-300'
+            }`}
+          />
+          {errors.time && <p className="mt-1 text-sm text-red-600">{errors.time}</p>}
+        </div>
       </div>
 
       <div>

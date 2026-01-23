@@ -199,7 +199,7 @@ export async function createOrder(
     data.customerId,
     'issued',
     data.quantity,
-    `Order #${newOrder.id}`,
+    `Order #${newOrder.orderNumber}`,
     createdBy,
     existingBottleTransactions
   );
@@ -214,7 +214,7 @@ export async function createOrder(
         amount: amountPaid,
         paymentMethod: 'cash',
         orderId: newOrder.id,
-        notes: `Payment for Order #${newOrder.id}`,
+        notes: `Payment for Order #${newOrder.orderNumber}`,
       },
       existingPayments,
       createdBy

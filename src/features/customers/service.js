@@ -81,9 +81,6 @@ export async function createCustomer(data, existingCustomers) {
   // Set default product prices if not provided
   const productPrices = data.productPrices || {};
 
-  // Set opening balance (default to 0 if not provided)
-  const openingBalance = data.openingBalance || 0;
-
   const now = new Date().toISOString();
   const newCustomer = {
     id: generateCustomerId(),
@@ -92,7 +89,6 @@ export async function createCustomer(data, existingCustomers) {
     address: data.address.trim(),
     preferredLanguage: data.preferredLanguage,
     productPrices: productPrices,
-    openingBalance: openingBalance,
     createdAt: now,
     updatedAt: now,
   };
@@ -136,8 +132,6 @@ export async function updateCustomer(id, data, existingCustomers) {
     // Preserve legacy bottlePrices for backward compatibility if they exist
     // (but don't use them for new updates)
     ...(existingCustomer.bottlePrices && { bottlePrices: existingCustomer.bottlePrices }),
-    // Opening balance is preserved (do not update)
-    openingBalance: existingCustomer.openingBalance || 0,
     updatedAt: new Date().toISOString(),
   };
 

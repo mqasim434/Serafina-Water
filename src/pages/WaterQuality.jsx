@@ -62,12 +62,12 @@ export function WaterQuality() {
     setViewMode(VIEW_MODES.LIST);
   };
 
-  const handleSubmit = async (date, pH, tds, chlorine) => {
+  const handleSubmit = async (date, time, pH, tds, chlorine) => {
     dispatch(setLoading(true));
     try {
       const user = await getCurrentAuthUser();
       const newEntry = await waterQualityService.createWaterQualityEntry(
-        { date, pH, tds, chlorine },
+        { date, time, pH, tds, chlorine },
         entries,
         ranges,
         user?.id

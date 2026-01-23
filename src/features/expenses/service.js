@@ -86,8 +86,12 @@ export async function saveCategories(categories) {
  * @returns {{isValid: boolean, error?: string}} Validation result
  */
 export function validateExpense(data, availableCash) {
-  if (!data.category || data.category.trim() === '') {
-    return { isValid: false, error: 'Category is required' };
+  if (!data.title || data.title.trim() === '') {
+    return { isValid: false, error: 'Expense title is required' };
+  }
+
+  if (!data.date || data.date.trim() === '') {
+    return { isValid: false, error: 'Expense date is required' };
   }
 
   if (!data.amount || data.amount <= 0) {
@@ -121,9 +125,10 @@ export async function createExpense(data, existingExpenses, currentCashBalance, 
   const now = new Date().toISOString();
   const newExpense = {
     id: generateExpenseId(),
-    category: data.category.trim(),
-    amount: data.amount,
+    title: data.title.trim(),
     description: data.description?.trim() || '',
+    amount: data.amount,
+    date: data.date,
     createdAt: now,
     createdBy: createdBy || null,
   };
@@ -286,7 +291,8 @@ export function calculateTotalExpenses(expenses) {
 export function calculateExpensesInRange(startDate, endDate, expenses) {
   return expenses
     .filter((expense) => {
-      const expenseDate = expense.createdAt.split('T')[0];
+      // Use expense.date if available, otherwise fall back to createdAt
+      const expenseDate = expense.date || expense.createdAt.split('T')[0];
       return expenseDate >= startDate && expenseDate <= endDate;
     })
     .reduce((sum, expense) => sum + expense.amount, 0);
