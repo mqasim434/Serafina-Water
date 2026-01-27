@@ -206,9 +206,10 @@ export async function createOrder(
 
   // Create payment record if amount was paid
   let payment = null;
+  let finalCashBalance = currentCashBalance.amount + amountPaid; // Default: add payment amount
   if (amountPaid > 0) {
     const { createPayment } = await import('../payments/service.js');
-    payment = await createPayment(
+    const paymentResult = await createPayment(
       {
         customerId: data.customerId,
         amount: amountPaid,
@@ -217,13 +218,20 @@ export async function createOrder(
         notes: `Payment for Order #${newOrder.orderNumber}`,
       },
       existingPayments,
-      createdBy
+      createdBy,
+      currentCashBalance.amount // Pass current cash balance
     );
+    payment = paymentResult.payment;
+    // Use the updated cash balance from payment service if available
+    // (payment service updates cash when paymentMethod is 'cash')
+    if (paymentResult.newCashBalance !== undefined) {
+      finalCashBalance = paymentResult.newCashBalance;
+    }
   }
 
   // Update cash on hand (only add the amount that was actually paid)
   const newCashBalance = {
-    amount: currentCashBalance.amount + amountPaid,
+    amount: finalCashBalance,
     lastUpdated: now,
   };
 

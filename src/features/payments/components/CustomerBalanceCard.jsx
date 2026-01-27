@@ -71,7 +71,7 @@ export function CustomerBalanceCard({ customerId }) {
             </span>
           </div>
           <div className="mt-2 text-xs text-gray-500">
-            {t('balanceCalculation') || 'Calculation: Total Orders - Total Payments'}
+            {t('Balance Calculation') || 'Calculation: Total Orders - Total Payments'}
           </div>
         </div>
       </div>

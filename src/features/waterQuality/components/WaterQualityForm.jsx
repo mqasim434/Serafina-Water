@@ -4,7 +4,7 @@
  * Form for daily water quality entry
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
 import * as cashService from '../../../features/cash/service.js';
@@ -24,7 +24,6 @@ import * as cashService from '../../../features/cash/service.js';
 export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
   const { t } = useTranslation();
   const { ranges } = useSelector((state) => state.waterQuality);
-  const { items: entries } = useSelector((state) => state.waterQuality);
 
   const today = cashService.getTodayDate();
   const now = new Date();
@@ -40,22 +39,7 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
 
   const [errors, setErrors] = useState({});
 
-  // Check if entry exists for selected date
-  const entryExists = entries.some((entry) => entry.date === formData.date);
-
-  useEffect(() => {
-    if (entryExists && formData.date === today) {
-      setErrors((prev) => ({
-        ...prev,
-        date: t('entryExistsForDate'),
-      }));
-    } else {
-      setErrors((prev) => ({
-        ...prev,
-        date: undefined,
-      }));
-    }
-  }, [formData.date, entryExists, today, t]);
+  // Removed: One entry per day restriction - now allows multiple entries per day
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,20 +71,18 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
       newErrors.time = t('timeRequired') || 'Time is required';
     }
 
-    if (entryExists) {
-      newErrors.date = t('entryExistsForDate');
+    // Removed: One entry per day validation
+    // Allow any valid number (integer or decimal)
+    if (formData.pH === '' || isNaN(pH)) {
+      newErrors.pH = t('pHInvalid') || 'pH must be a number';
     }
 
-    if (formData.pH === '' || isNaN(pH) || pH < 0 || pH > 14) {
-      newErrors.pH = t('pHInvalid');
+    if (formData.tds === '' || isNaN(tds)) {
+      newErrors.tds = t('tdsInvalid') || 'TDS must be a number';
     }
 
-    if (formData.tds === '' || isNaN(tds) || tds < 0) {
-      newErrors.tds = t('tdsInvalid');
-    }
-
-    if (formData.chlorine === '' || isNaN(chlorine) || chlorine < 0) {
-      newErrors.chlorine = t('chlorineInvalid');
+    if (formData.chlorine === '' || isNaN(chlorine)) {
+      newErrors.chlorine = t('chlorineInvalid') || 'Chlorine must be a number';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -174,9 +156,7 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
           type="number"
           id="pH"
           name="pH"
-          step="0.1"
-          min="0"
-          max="14"
+          step="any"
           value={formData.pH}
           onChange={handleChange}
           placeholder="7.0"
@@ -195,8 +175,7 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
           type="number"
           id="tds"
           name="tds"
-          step="1"
-          min="0"
+          step="any"
           value={formData.tds}
           onChange={handleChange}
           placeholder="200"
@@ -215,8 +194,7 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
           type="number"
           id="chlorine"
           name="chlorine"
-          step="0.1"
-          min="0"
+          step="any"
           value={formData.chlorine}
           onChange={handleChange}
           placeholder="1.0"
@@ -230,7 +208,7 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={isLoading || entryExists}
+          disabled={isLoading}
           className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? t('loading') : t('save')}

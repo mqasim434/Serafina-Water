@@ -18,9 +18,10 @@ import {
   setError,
 } from '../features/payments/slice.js';
 import { paymentsService } from '../features/payments/slice.js';
-import { ordersService, setOrders } from '../features/orders/slice.js';
+import { ordersService, setOrders, setCashBalance } from '../features/orders/slice.js';
 import { setCustomers } from '../features/customers/slice.js';
 import { customersService } from '../features/customers/slice.js';
+import * as cashService from '../features/cash/service.js';
 
 const VIEW_MODES = {
   LIST: 'list',
@@ -97,7 +98,14 @@ export function Payments() {
     dispatch(setError(null));
 
     try {
-      const newPayment = await paymentsService.createPayment(
+      // Get current cash balance
+      const currentCashBalance = await cashService.loadCurrentBalance();
+      const cashBalanceObj = { 
+        amount: typeof currentCashBalance === 'number' ? currentCashBalance : (currentCashBalance?.amount || 0), 
+        lastUpdated: new Date().toISOString() 
+      };
+
+      const result = await paymentsService.createPayment(
         {
           customerId,
           amount,
@@ -105,10 +113,20 @@ export function Payments() {
           notes,
         },
         payments,
-        user?.id || null
+        user?.id || null,
+        cashBalanceObj.amount
       );
 
-      dispatch(addPayment(newPayment));
+      dispatch(addPayment(result.payment));
+      
+      // Update cash balance if payment was cash
+      if (result.newCashBalance !== undefined) {
+        dispatch(setCashBalance({ 
+          amount: result.newCashBalance, 
+          lastUpdated: new Date().toISOString() 
+        }));
+      }
+      
       setViewMode(VIEW_MODES.LIST);
       setSelectedCustomerId(customerId);
     } catch (err) {

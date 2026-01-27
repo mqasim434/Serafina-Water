@@ -39,7 +39,7 @@ export function Reports() {
 
     switch (selectedReport) {
       case REPORT_TYPES.CUSTOMER_BOTTLES:
-        data = reportsService.generateCustomerBottlesReport(customers, transactions);
+        data = reportsService.generateCustomerBottlesReport(customers, transactions, orders, products);
         headers = ['Customer Name', 'Issued', 'Returned', 'Outstanding'];
         title = 'Customer-wise Bottles Report';
         data = data.map((r) => ({
@@ -52,7 +52,9 @@ export function Reports() {
       case REPORT_TYPES.OUTSTANDING_BOTTLES:
         const outstandingReport = reportsService.generateOutstandingBottlesReport(
           customers,
-          transactions
+          transactions,
+          orders,
+          products
         );
         data = outstandingReport.customers;
         headers = ['Customer Name', 'Outstanding'];
@@ -117,7 +119,7 @@ export function Reports() {
 
     switch (selectedReport) {
       case REPORT_TYPES.CUSTOMER_BOTTLES:
-        data = reportsService.generateCustomerBottlesReport(customers, transactions);
+        data = reportsService.generateCustomerBottlesReport(customers, transactions, orders, products);
         headers = ['Customer Name', 'Issued', 'Returned', 'Outstanding'];
         filename = 'customer_bottles_report.csv';
         data = data.map((r) => ({
@@ -130,7 +132,9 @@ export function Reports() {
       case REPORT_TYPES.OUTSTANDING_BOTTLES:
         const outstandingReport = reportsService.generateOutstandingBottlesReport(
           customers,
-          transactions
+          transactions,
+          orders,
+          products
         );
         data = outstandingReport.customers;
         headers = ['Customer Name', 'Outstanding'];
@@ -193,7 +197,9 @@ export function Reports() {
       case REPORT_TYPES.CUSTOMER_BOTTLES:
         const customerBottles = reportsService.generateCustomerBottlesReport(
           customers,
-          transactions
+          transactions,
+          orders,
+          products
         );
         return (
           <div className="overflow-x-auto">
@@ -239,7 +245,9 @@ export function Reports() {
       case REPORT_TYPES.OUTSTANDING_BOTTLES:
         const outstandingReport = reportsService.generateOutstandingBottlesReport(
           customers,
-          transactions
+          transactions,
+          orders,
+          products
         );
         return (
           <div>

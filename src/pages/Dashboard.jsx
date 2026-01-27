@@ -4,12 +4,15 @@
  * Main dashboard with key metrics widgets
  */
 
-import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 import * as cashService from '../features/cash/service.js';
-import { bottlesService } from '../features/bottles/slice.js';
-import { expensesService } from '../features/expenses/slice.js';
-import { waterQualityService } from '../features/waterQuality/slice.js';
+import { bottlesService, setTransactions } from '../features/bottles/slice.js';
+import { expensesService, setExpenses } from '../features/expenses/slice.js';
+import { waterQualityService, setEntries } from '../features/waterQuality/slice.js';
+import { ordersService, setOrders, setCashBalance } from '../features/orders/slice.js';
+import { productsService, setProducts } from '../features/products/slice.js';
 
 /**
  * Dashboard Widget Component
@@ -39,12 +42,46 @@ function DashboardWidget({ title, value, icon, bgColor, textColor }) {
 }
 
 export function Dashboard() {
+  const dispatch = useDispatch();
   const { t } = useTranslation();
   const { items: orders } = useSelector((state) => state.orders);
   const { transactions } = useSelector((state) => state.bottles);
+  const { items: products } = useSelector((state) => state.products);
   const { items: expenses } = useSelector((state) => state.expenses);
   const { cashBalance } = useSelector((state) => state.orders);
   const { items: waterQualityEntries } = useSelector((state) => state.waterQuality);
+
+  // Load all dashboard data on mount so cards reflect real-time data
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const [
+          loadedOrders,
+          loadedCashBalance,
+          loadedTransactions,
+          loadedProducts,
+          loadedExpenses,
+          loadedEntries,
+        ] = await Promise.all([
+          ordersService.loadOrders(),
+          ordersService.loadCashBalance(),
+          bottlesService.loadTransactions(),
+          productsService.loadProducts(),
+          expensesService.loadExpenses(),
+          waterQualityService.loadWaterQualityEntries(),
+        ]);
+        dispatch(setOrders(loadedOrders));
+        dispatch(setCashBalance(loadedCashBalance));
+        dispatch(setTransactions(loadedTransactions));
+        dispatch(setProducts(loadedProducts));
+        dispatch(setExpenses(loadedExpenses));
+        dispatch(setEntries(loadedEntries));
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+      }
+    }
+    loadDashboardData();
+  }, [dispatch]);
 
   // Calculate today's deliveries (today's orders)
   const today = cashService.getTodayDate();
@@ -58,9 +95,13 @@ export function Dashboard() {
     0
   );
 
-  // Calculate outstanding bottles
-  const globalSummary = bottlesService.calculateGlobalSummary(transactions);
-  const outstandingBottles = globalSummary.totalOutstanding;
+  // Calculate outstanding bottles (returnable products only)
+  const returnableSummary = bottlesService.calculateGlobalSummaryReturnable(
+    transactions,
+    orders,
+    products
+  );
+  const outstandingBottles = returnableSummary.totalOutstandingReturnable;
 
   // Cash on hand
   const cashOnHand = cashBalance?.amount || 0;

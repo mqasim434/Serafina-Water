@@ -14,8 +14,15 @@ import { bottlesService } from '../slice.js';
 export function BottleSummary() {
   const { t } = useTranslation();
   const { transactions } = useSelector((state) => state.bottles);
+  const { items: orders } = useSelector((state) => state.orders);
+  const { items: products } = useSelector((state) => state.products);
 
   const summary = bottlesService.calculateGlobalSummary(transactions);
+  const returnableSummary = bottlesService.calculateGlobalSummaryReturnable(
+    transactions,
+    orders,
+    products
+  );
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -37,7 +44,7 @@ export function BottleSummary() {
 
           <div className="bg-orange-50 rounded-lg p-4">
             <p className="text-sm font-medium text-orange-600">{t('totalOutstanding')}</p>
-            <p className="text-2xl font-bold text-orange-900 mt-1">{summary.totalOutstanding}</p>
+            <p className="text-2xl font-bold text-orange-900 mt-1">{returnableSummary.totalOutstandingReturnable}</p>
           </div>
 
           <div className="bg-purple-50 rounded-lg p-4">

@@ -69,9 +69,10 @@ export function validatePayment(data, maxAmount) {
  * @param {import('./types.js').PaymentFormData} data - Payment form data
  * @param {import('./types.js').Payment[]} existingPayments - Existing payments
  * @param {string} [createdBy] - User who created the payment
- * @returns {Promise<import('./types.js').Payment>} Created payment
+ * @param {number} [currentCashBalance] - Current cash balance (optional, for updating cash)
+ * @returns {Promise<{payment: import('./types.js').Payment, newCashBalance?: number}>} Created payment and optionally new cash balance
  */
-export async function createPayment(data, existingPayments, createdBy) {
+export async function createPayment(data, existingPayments, createdBy, currentCashBalance) {
   const validation = validatePayment(data);
   if (!validation.isValid) {
     throw new Error(validation.error);
@@ -92,7 +93,17 @@ export async function createPayment(data, existingPayments, createdBy) {
   const updatedPayments = [...existingPayments, newPayment];
   await savePayments(updatedPayments);
 
-  return newPayment;
+  // Update cash balance if payment method is cash and currentCashBalance is provided
+  let newCashBalance = undefined;
+  if (data.paymentMethod === 'cash' && currentCashBalance !== undefined) {
+    const { updateCashBalance } = await import('../cash/service.js');
+    newCashBalance = await updateCashBalance(data.amount, currentCashBalance);
+  }
+
+  return {
+    payment: newPayment,
+    newCashBalance,
+  };
 }
 
 /**

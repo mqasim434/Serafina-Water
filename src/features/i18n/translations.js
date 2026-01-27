@@ -141,6 +141,9 @@ export const translations = {
     noTransactions: 'No transactions found',
     transactionDate: 'Date',
     transactionType: 'Type',
+    customersWithOutstandingBottles: 'Customers with Outstanding Bottles',
+    noCustomersWithOutstandingBottles: 'No customers have outstanding bottles to return',
+    selectCustomerToReturnBottles: 'Click on a customer to record bottle returns',
     
     // Orders
     order: 'Order',
@@ -181,6 +184,7 @@ export const translations = {
     outstandingBalance: 'Outstanding Balance',
     totalOrders: 'Total Orders',
     totalPayments: 'Total Payments',
+    balanceCalculation: 'Balance Calculation',
     balance: 'Balance',
     fullPayment: 'Full Payment',
     partialPayment: 'Partial Payment',

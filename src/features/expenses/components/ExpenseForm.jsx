@@ -66,10 +66,6 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
       newErrors.amount = t('expenseAmountRequired') || 'Expense amount must be greater than 0';
     }
 
-    if (availableCash !== undefined && amount > availableCash) {
-      newErrors.amount = t('expenseAmountExceedsCash') || `Amount cannot exceed available cash of ${availableCash.toLocaleString()}`;
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;

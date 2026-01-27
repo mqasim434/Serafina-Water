@@ -79,7 +79,7 @@ export function CustomerDetails({ customer, onEdit, onDelete }) {
         </div>
 
         <div className="border-t border-gray-200 pt-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">{t('productPrices') || t('bottlePrices')}</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">{t('Product Prices') || t('bottlePrices')}</label>
           <div className="grid grid-cols-2 gap-3">
             {customer.productPrices && activeProducts.length > 0 ? (
               activeProducts.map((product) => {

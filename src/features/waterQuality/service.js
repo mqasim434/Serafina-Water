@@ -132,22 +132,19 @@ export function validateWaterQualityEntry(data, existingEntries) {
     return { isValid: false, error: 'Date is required' };
   }
 
-  if (data.pH === undefined || data.pH === null || data.pH < 0 || data.pH > 14) {
-    return { isValid: false, error: 'pH must be between 0 and 14' };
+  if (data.pH === undefined || data.pH === null || typeof data.pH !== 'number' || Number.isNaN(data.pH)) {
+    return { isValid: false, error: 'pH must be a number' };
   }
 
-  if (data.tds === undefined || data.tds === null || data.tds < 0) {
-    return { isValid: false, error: 'TDS must be a positive number' };
+  if (data.tds === undefined || data.tds === null || typeof data.tds !== 'number' || Number.isNaN(data.tds)) {
+    return { isValid: false, error: 'TDS must be a number' };
   }
 
-  if (data.chlorine === undefined || data.chlorine === null || data.chlorine < 0) {
-    return { isValid: false, error: 'Chlorine must be a positive number' };
+  if (data.chlorine === undefined || data.chlorine === null || typeof data.chlorine !== 'number' || Number.isNaN(data.chlorine)) {
+    return { isValid: false, error: 'Chlorine must be a number' };
   }
 
-  // Check if entry already exists for this date
-  if (entryExistsForDate(data.date, existingEntries)) {
-    return { isValid: false, error: 'An entry already exists for this date' };
-  }
+  // Removed: One entry per day restriction - now allows multiple entries per day
 
   return { isValid: true };
 }

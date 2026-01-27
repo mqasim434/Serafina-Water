@@ -82,10 +82,9 @@ export async function saveCategories(categories) {
 /**
  * Validate expense data
  * @param {import('./types.js').ExpenseFormData} data - Expense form data
- * @param {number} [availableCash] - Available cash balance
  * @returns {{isValid: boolean, error?: string}} Validation result
  */
-export function validateExpense(data, availableCash) {
+export function validateExpense(data) {
   if (!data.title || data.title.trim() === '') {
     return { isValid: false, error: 'Expense title is required' };
   }
@@ -96,13 +95,6 @@ export function validateExpense(data, availableCash) {
 
   if (!data.amount || data.amount <= 0) {
     return { isValid: false, error: 'Expense amount must be greater than 0' };
-  }
-
-  if (availableCash !== undefined && data.amount > availableCash) {
-    return {
-      isValid: false,
-      error: `Expense amount cannot exceed available cash of ${availableCash.toLocaleString()}`,
-    };
   }
 
   return { isValid: true };
@@ -117,7 +109,7 @@ export function validateExpense(data, availableCash) {
  * @returns {Promise<{expense: import('./types.js').Expense, newCashBalance: number}>} Created expense and new cash balance
  */
 export async function createExpense(data, existingExpenses, currentCashBalance, createdBy) {
-  const validation = validateExpense(data, currentCashBalance);
+  const validation = validateExpense(data);
   if (!validation.isValid) {
     throw new Error(validation.error);
   }

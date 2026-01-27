@@ -22,8 +22,16 @@ export function CustomerBottleBalance({ customerId }) {
   const { t } = useTranslation();
   const { transactions } = useSelector((state) => state.bottles);
   const { items: customers } = useSelector((state) => state.customers);
+  const { items: orders } = useSelector((state) => state.orders);
+  const { items: products } = useSelector((state) => state.products);
 
   const balance = bottlesService.calculateCustomerBalance(customerId, transactions);
+  const outstandingReturnable = bottlesService.calculateOutstandingReturnable(
+    customerId,
+    transactions,
+    orders,
+    products
+  );
   const customer = customers.find((c) => c.id === customerId);
 
   if (!customer) {
@@ -53,14 +61,14 @@ export function CustomerBottleBalance({ customerId }) {
             <p className="text-sm font-medium text-gray-600">{t('outstanding')}</p>
             <p
               className={`text-2xl font-bold mt-1 ${
-                balance.outstanding > 0
+                outstandingReturnable > 0
                   ? 'text-orange-600'
-                  : balance.outstanding < 0
+                  : outstandingReturnable < 0
                   ? 'text-red-600'
                   : 'text-gray-600'
               }`}
             >
-              {balance.outstanding}
+              {outstandingReturnable}
             </p>
           </div>
         </div>

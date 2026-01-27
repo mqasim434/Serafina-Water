@@ -12,6 +12,7 @@ import { ReturnForm } from '../features/bottles/components/ReturnForm.jsx';
 import { BottleSummary } from '../features/bottles/components/BottleSummary.jsx';
 import { CustomerBottleBalance } from '../features/bottles/components/CustomerBottleBalance.jsx';
 import { TransactionHistory } from '../features/bottles/components/TransactionHistory.jsx';
+import { CustomersWithOutstandingBottles } from '../features/bottles/components/CustomersWithOutstandingBottles.jsx';
 import { CustomerSearch } from '../features/customers/components/CustomerSearch.jsx';
 import {
   setLoading,
@@ -52,6 +53,8 @@ export function Bottles() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [lastOrder, setLastOrder] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Load all necessary data on mount
   useEffect(() => {
@@ -92,6 +95,8 @@ export function Bottles() {
   const handleOrderSubmit = async (orderData) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
+    setShowSuccessMessage(false); // Clear any previous success message
+    
     try {
       // Get current cash balance
       const currentCashBalance = await cashService.loadCurrentBalance();
@@ -121,6 +126,31 @@ export function Bottles() {
       }
       dispatch(setCashBalance(result.newCashBalance));
 
+      // Show success message
+      const orderNumber = result.order.orderNumber || '';
+      const successMsg = t('orderCreated') + (orderNumber ? ` - ${t('order')} #${orderNumber}` : '');
+      setSuccessMessage(successMsg);
+      
+      // Keep loading visible for at least 500ms, then show success
+      setTimeout(() => {
+        dispatch(setLoading(false));
+        
+        // Show success notification immediately after loading clears
+        setTimeout(() => {
+          setShowSuccessMessage(true);
+          
+          // Auto-hide success message after 4 seconds
+          setTimeout(() => {
+            setShowSuccessMessage(false);
+          }, 4000);
+        }, 50);
+        
+        // Reset form after a brief delay
+        setTimeout(() => {
+          setSelectedCustomerId('');
+        }, 1000);
+      }, 500);
+
       // Show receipt - TEMPORARILY DISABLED FOR BUILD TESTING
       // const customer = customers.find((c) => c.id === selectedCustomerId);
       // const product = products.find((p) => p.id === result.order.productId);
@@ -130,7 +160,6 @@ export function Bottles() {
       setShowReceipt(false); // Disabled for build testing
     } catch (err) {
       dispatch(setError(err.message));
-    } finally {
       dispatch(setLoading(false));
     }
   };
@@ -140,6 +169,14 @@ export function Bottles() {
     dispatch(setLoading(true));
     dispatch(setError(null));
     try {
+      // Validate that customer has enough returnable bottles
+      const maxReturnable = getMaxReturnable(customerId);
+      if (maxReturnable !== undefined && quantity > maxReturnable) {
+        dispatch(setError(`Cannot return ${quantity} bottles. Customer only has ${maxReturnable} returnable bottles outstanding.`));
+        dispatch(setLoading(false));
+        return;
+      }
+
       const newTransaction = await bottlesService.createTransaction(
         customerId,
         'returned',
@@ -183,7 +220,13 @@ export function Bottles() {
 
   const getMaxReturnable = (customerId) => {
     if (!customerId) return undefined;
-    return bottlesService.calculateOutstanding(customerId, transactions);
+    // Use calculateOutstandingReturnable to only count returnable products
+    return bottlesService.calculateOutstandingReturnable(
+      customerId,
+      transactions,
+      orders,
+      products
+    );
   };
 
   if (isLoading && transactions.length === 0) {
@@ -243,6 +286,40 @@ export function Bottles() {
         </div>
       )}
 
+      {/* Success Notification */}
+      {showSuccessMessage && (
+        <div 
+          className="fixed top-20 right-4 z-[9999] bg-green-500 border-2 border-green-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[320px] max-w-md animate-slide-in"
+          style={{ zIndex: 9999 }}
+        >
+          <svg
+            className="w-6 h-6 text-white flex-shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <div className="flex-1">
+            <p className="font-bold text-base">{t('success')}</p>
+            <p className="text-sm mt-1">{successMessage}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSuccessMessage(false)}
+            className="ml-2 text-white hover:text-gray-200 font-bold text-lg leading-none"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Receipt Modal - TEMPORARILY DISABLED */}
       {/* {showReceipt && lastOrder && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -292,6 +369,7 @@ export function Bottles() {
                   setSelectedCustomerId('');
                 }}
                 isLoading={isLoading}
+                key={selectedCustomerId} // Force re-render when customer changes
               />
             )}
           </div>
@@ -311,54 +389,65 @@ export function Bottles() {
 
       {/* Returns Tab */}
       {activeTab === TABS.RETURNS && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('returnBottles')}</h2>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('returnBottles')}</h2>
 
-            <div className="mb-4">
-              <CustomerSearch
-                customers={customers}
-                value={selectedCustomerId}
-                onChange={setSelectedCustomerId}
-                required={true}
-                placeholder={t('search') + ' ' + t('customer').toLowerCase() + '...'}
-                filter={(customer) => {
-                  // Only show customers who have orders with returnable products
-                  const customerOrders = orders.filter((o) => o.customerId === customer.id);
-                  if (customerOrders.length === 0) return false;
-                  
-                  // Check if any order has a returnable product
-                  return customerOrders.some((order) => {
-                    const product = products.find((p) => p.id === order.productId);
-                    return product && product.isReturnable !== false; // Default to true if not set
-                  });
-                }}
-              />
+              <div className="mb-4">
+                <CustomerSearch
+                  customers={customers}
+                  value={selectedCustomerId}
+                  onChange={setSelectedCustomerId}
+                  required={true}
+                  placeholder={t('search') + ' ' + t('customer').toLowerCase() + '...'}
+                  filter={(customer) => {
+                    // Only show customers who have orders with returnable products
+                    const customerOrders = orders.filter((o) => o.customerId === customer.id);
+                    if (customerOrders.length === 0) return false;
+                    
+                    // Check if any order has a returnable product
+                    return customerOrders.some((order) => {
+                      const product = products.find((p) => p.id === order.productId);
+                      return product && product.isReturnable !== false; // Default to true if not set
+                    });
+                  }}
+                />
+              </div>
+
+              {selectedCustomerId && (
+                <ReturnForm
+                  customerId={selectedCustomerId}
+                  maxReturnable={getMaxReturnable(selectedCustomerId)}
+                  onSubmit={handleReturnSubmit}
+                  onCancel={() => {
+                    setSelectedCustomerId('');
+                  }}
+                  isLoading={isLoading}
+                />
+              )}
             </div>
 
-            {selectedCustomerId && (
-              <ReturnForm
-                customerId={selectedCustomerId}
-                maxReturnable={getMaxReturnable(selectedCustomerId)}
-                onSubmit={handleReturnSubmit}
-                onCancel={() => {
-                  setSelectedCustomerId('');
-                }}
-                isLoading={isLoading}
-              />
-            )}
+            <div>
+              {selectedCustomerId && (
+                <>
+                  <CustomerBottleBalance customerId={selectedCustomerId} />
+                  <div className="mt-6">
+                    <TransactionHistory customerId={selectedCustomerId} />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
-          <div>
-            {selectedCustomerId && (
-              <>
-                <CustomerBottleBalance customerId={selectedCustomerId} />
-                <div className="mt-6">
-                  <TransactionHistory customerId={selectedCustomerId} />
-                </div>
-              </>
-            )}
-          </div>
+          {/* Customers with Outstanding Bottles */}
+          {!selectedCustomerId && (
+            <CustomersWithOutstandingBottles
+              onSelectCustomer={(customerId) => {
+                setSelectedCustomerId(customerId);
+              }}
+            />
+          )}
         </div>
       )}
 

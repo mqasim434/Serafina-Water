@@ -116,6 +116,81 @@ export function calculateOutstanding(customerId, transactions) {
 }
 
 /**
+ * Calculate outstanding bottles for a customer (only for returnable products)
+ * This function calculates based on orders (which have product info) rather than just transactions
+ * @param {string} customerId - Customer ID
+ * @param {import('./types.js').BottleTransaction[]} transactions - All transactions
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('../products/types.js').Product[]} products - All products
+ * @returns {number} Outstanding bottles from returnable products only
+ */
+export function calculateOutstandingReturnable(customerId, transactions, orders, products) {
+  // Get all orders for this customer with returnable products
+  const customerReturnableOrders = orders.filter((order) => {
+    if (order.customerId !== customerId) return false;
+    const product = products.find((p) => p.id === order.productId);
+    return product && product.isReturnable !== false; // Default to true if not set
+  });
+
+  // Calculate total bottles issued from returnable products (from orders)
+  const totalIssuedReturnable = customerReturnableOrders.reduce((sum, order) => sum + order.quantity, 0);
+
+  // Get all transactions for this customer
+  const customerTransactions = transactions.filter((t) => t.customerId === customerId);
+
+  // Get all issued transactions for this customer
+  const totalIssued = customerTransactions
+    .filter((t) => t.type === 'issued')
+    .reduce((sum, t) => sum + t.quantity, 0);
+
+  // Get all returned transactions
+  const totalReturned = customerTransactions
+    .filter((t) => t.type === 'returned')
+    .reduce((sum, t) => sum + t.quantity, 0);
+
+  // If no returnable orders, return 0
+  if (totalIssuedReturnable === 0) {
+    return 0;
+  }
+
+  // Calculate the ratio of returnable issued to total issued
+  // This helps us estimate how many returns are for returnable products
+  const returnableRatio = totalIssued > 0 ? totalIssuedReturnable / totalIssued : 1;
+  
+  // Estimate returned bottles from returnable products
+  // We assume returns are proportional to issued bottles
+  // This is an approximation - ideally we'd track which returns are for which products
+  const estimatedReturnedReturnable = Math.round(totalReturned * returnableRatio);
+
+  // Calculate outstanding returnable bottles
+  const outstandingReturnable = totalIssuedReturnable - estimatedReturnedReturnable;
+
+  // Return max of 0 (don't return negative values)
+  return Math.max(0, outstandingReturnable);
+}
+
+/**
+ * Calculate global summary of outstanding bottles (returnable products only)
+ * @param {import('./types.js').BottleTransaction[]} transactions - All transactions
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('../products/types.js').Product[]} products - All products
+ * @returns {{ totalOutstandingReturnable: number }} Summary of returnable outstanding bottles
+ */
+export function calculateGlobalSummaryReturnable(transactions, orders, products) {
+  const customerIds = new Set((orders || []).map((o) => o.customerId));
+  let totalOutstandingReturnable = 0;
+  for (const customerId of customerIds) {
+    totalOutstandingReturnable += calculateOutstandingReturnable(
+      customerId,
+      transactions,
+      orders || [],
+      products || []
+    );
+  }
+  return { totalOutstandingReturnable };
+}
+
+/**
  * Calculate global bottle summary
  * @param {import('./types.js').BottleTransaction[]} transactions - All transactions
  * @returns {import('./types.js').BottleSummary} Global summary

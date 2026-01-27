@@ -10,37 +10,47 @@ import { bottlesService } from '../bottles/slice.js';
 import { paymentsService } from '../payments/slice.js';
 
 /**
- * Generate customer-wise bottles report
+ * Generate customer-wise bottles report (outstanding = returnable only)
  * @param {import('../customers/types.js').Customer[]} customers - All customers
  * @param {import('../bottles/types.js').BottleTransaction[]} transactions - All bottle transactions
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('../products/types.js').Product[]} products - All products
  * @returns {import('./types.js').CustomerBottlesReport[]} Customer bottles report
  */
-export function generateCustomerBottlesReport(customers, transactions) {
+export function generateCustomerBottlesReport(customers, transactions, orders = [], products = []) {
   return customers.map((customer) => {
     const balance = bottlesService.calculateCustomerBalance(customer.id, transactions);
+    const outstandingReturnable = bottlesService.calculateOutstandingReturnable(
+      customer.id,
+      transactions,
+      orders,
+      products
+    );
     return {
       customerId: customer.id,
       customerName: customer.name,
       issued: balance.issued,
       returned: balance.returned,
-      outstanding: balance.outstanding,
+      outstanding: outstandingReturnable,
     };
   }).filter((report) => report.outstanding > 0 || report.issued > 0)
     .sort((a, b) => b.outstanding - a.outstanding);
 }
 
 /**
- * Generate outstanding bottles report
+ * Generate outstanding bottles report (returnable products only)
  * @param {import('../customers/types.js').Customer[]} customers - All customers
  * @param {import('../bottles/types.js').BottleTransaction[]} transactions - All bottle transactions
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('../products/types.js').Product[]} products - All products
  * @returns {import('./types.js').OutstandingBottlesReport} Outstanding bottles report
  */
-export function generateOutstandingBottlesReport(customers, transactions) {
-  const globalSummary = bottlesService.calculateGlobalSummary(transactions);
-  const customerReports = generateCustomerBottlesReport(customers, transactions);
+export function generateOutstandingBottlesReport(customers, transactions, orders = [], products = []) {
+  const returnableSummary = bottlesService.calculateGlobalSummaryReturnable(transactions, orders, products);
+  const customerReports = generateCustomerBottlesReport(customers, transactions, orders, products);
 
   return {
-    totalOutstanding: globalSummary.totalOutstanding,
+    totalOutstanding: returnableSummary.totalOutstandingReturnable,
     customers: customerReports.filter((r) => r.outstanding > 0),
   };
 }

@@ -111,7 +111,7 @@ export function Settings() {
         settings
       );
       dispatch(setSettings(updated));
-      alert(t('settingsSaved'));
+      alert(t('Settings Saved'));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -126,7 +126,7 @@ export function Settings() {
       const updated = await settingsService.updateDefaultLanguage(newLanguage, settings);
       dispatch(setSettings(updated));
       dispatch(setLanguage(newLanguage));
-      alert(t('settingsSaved'));
+      alert(t('Settings Saved'));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -189,7 +189,7 @@ export function Settings() {
       };
       await waterQualityService.saveWaterQualityRanges(updatedRanges);
       dispatch(setRanges(updatedRanges));
-      alert(t('settingsSaved'));
+      alert(t('Settings Saved'));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -241,7 +241,7 @@ export function Settings() {
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {t('language')}
+                {t('Language')}
               </button>
               <button
                 onClick={() => setActiveSection(SETTINGS_SECTIONS.CATEGORIES)}
@@ -390,7 +390,7 @@ export function Settings() {
 
           {activeSection === SETTINGS_SECTIONS.WATER_QUALITY && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('waterQualityRanges')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('Water Quality Ranges')}</h2>
               <form onSubmit={handleWaterQualitySubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
