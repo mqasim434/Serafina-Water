@@ -260,7 +260,8 @@ export function getEntryForDate(date, entries) {
  */
 export function getLatestEntry(entries) {
   if (entries.length === 0) return null;
-  return entries.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  // Never sort Redux state arrays in-place (they can be frozen in dev)
+  return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 }
 
 /**

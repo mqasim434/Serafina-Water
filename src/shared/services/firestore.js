@@ -22,6 +22,41 @@ import {
 import { db } from './firebase.js';
 
 /**
+ * Convert Firestore non-serializable values (e.g. Timestamp) into
+ * serializable primitives for Redux state / actions.
+ *
+ * - Timestamp -> ISO string
+ * - Arrays/Objects -> deep-normalized
+ */
+function normalizeFirestoreValue(value) {
+  if (value === null || value === undefined) return value;
+
+  // Firestore Timestamp-like (has toDate())
+  if (typeof value === 'object' && typeof value.toDate === 'function') {
+    try {
+      const d = value.toDate();
+      return d instanceof Date ? d.toISOString() : value;
+    } catch {
+      return value;
+    }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(normalizeFirestoreValue);
+  }
+
+  if (typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = normalizeFirestoreValue(v);
+    }
+    return out;
+  }
+
+  return value;
+}
+
+/**
  * Get a document from a collection
  * @param {string} collectionName - Collection name
  * @param {string} docId - Document ID
@@ -36,7 +71,7 @@ export async function getDocument(collectionName, docId) {
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
+      return { id: docSnap.id, ...normalizeFirestoreValue(docSnap.data()) };
     }
     return null;
   } catch (error) {
@@ -77,7 +112,7 @@ export async function getDocuments(collectionName, filters = [], orderByField = 
     const querySnapshot = await getDocs(q);
     const documents = querySnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data(),
+      ...normalizeFirestoreValue(doc.data()),
     }));
     
     console.log(`Retrieved ${documents.length} documents from collection "${collectionName}"`);
