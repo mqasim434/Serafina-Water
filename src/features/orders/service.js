@@ -151,6 +151,7 @@ export function validateOrder(data) {
  * @param {import('../bottles/types.js').BottleTransaction[]} existingBottleTransactions - Existing bottle transactions
  * @param {import('../payments/types.js').Payment[]} existingPayments - Existing payments
  * @param {string} [createdBy] - User who created the order
+ * @param {import('../products/types.js').Product[]} [existingProducts] - Existing products (to store cost at sale)
  * @returns {Promise<{order: import('./types.js').Order, bottleTransaction: import('../bottles/types.js').BottleTransaction, payment: import('../payments/types.js').Payment | null, newCashBalance: import('./types.js').CashBalance}>}
  */
 export async function createOrder(
@@ -159,13 +160,18 @@ export async function createOrder(
   currentCashBalance,
   existingBottleTransactions,
   existingPayments,
-  createdBy
+  createdBy,
+  existingProducts = []
 ) {
   // Validate order
   const validation = validateOrder(data);
   if (!validation.isValid) {
     throw new Error(validation.error);
   }
+
+  // Cost at sale: store product cost at time of order (for profit reporting; never change retroactively)
+  const product = existingProducts.find((p) => p.id === data.productId);
+  const costPriceAtSale = product ? (product.costPrice ?? 0) : 0;
 
   // Calculate total (round to 2 decimal places to avoid floating point errors)
   const totalAmount = Math.round(calculateOrderTotal(data.quantity, data.price) * 100) / 100;
@@ -184,6 +190,7 @@ export async function createOrder(
     productId: data.productId,
     quantity: data.quantity,
     price: data.price,
+    costPriceAtSale,
     totalAmount,
     amountPaid,
     outstandingAmount,
@@ -259,6 +266,30 @@ export function getDefaultPricePerBottle() {
 }
 
 /**
+ * Backfill costPriceAtSale for orders that are missing it (one-time; uses current product costPrice).
+ * Does not change orders that already have costPriceAtSale.
+ * @param {import('./types.js').Order[]} existingOrders - Existing orders
+ * @param {import('../products/types.js').Product[]} products - All products
+ * @returns {Promise<import('./types.js').Order[]>} Updated orders (saved to storage if any changed)
+ */
+export async function backfillOrdersCostPrice(existingOrders, products) {
+  let changed = false;
+  const updated = existingOrders.map((order) => {
+    if (order.costPriceAtSale !== undefined && order.costPriceAtSale !== null) {
+      return order;
+    }
+    const product = products.find((p) => p.id === order.productId);
+    const cost = product ? (product.costPrice ?? 0) : 0;
+    changed = true;
+    return { ...order, costPriceAtSale: cost };
+  });
+  if (changed) {
+    await saveOrders(updated);
+  }
+  return updated;
+}
+
+/**
  * Get orders for a specific customer
  * @param {string} customerId - Customer ID
  * @param {import('./types.js').Order[]} orders - All orders
@@ -286,4 +317,48 @@ export function calculateTotalSales(orders) {
  */
 export function getTotalOrdersCount(orders) {
   return orders.length;
+}
+
+/**
+ * Mark an order as shipped and decrease product stock (and Ready to Ship if > 0)
+ * @param {string} orderId - Order ID
+ * @param {import('./types.js').Order[]} existingOrders - Existing orders
+ * @param {import('../products/types.js').Product[]} existingProducts - Existing products
+ * @returns {Promise<{order: import('./types.js').Order, products: import('../products/types.js').Product[]}>}
+ */
+export async function markOrderAsShipped(orderId, existingOrders, existingProducts) {
+  const orderIndex = existingOrders.findIndex((o) => o.id === orderId);
+  if (orderIndex === -1) {
+    throw new Error('Order not found');
+  }
+  const order = existingOrders[orderIndex];
+  if (order.status === 'shipped') {
+    return { order, products: existingProducts };
+  }
+  const productIndex = existingProducts.findIndex((p) => p.id === order.productId);
+  if (productIndex === -1) {
+    throw new Error('Product not found for order');
+  }
+  const product = existingProducts[productIndex];
+  const trackStock = product.trackStock !== false;
+  const qty = order.quantity || 0;
+  let updatedProducts = existingProducts;
+  if (trackStock && qty > 0) {
+    const currentStock = (product.currentStock ?? 0) - qty;
+    const readyToShip = Math.max(0, (product.readyToShip ?? 0) - qty);
+    const updatedProduct = {
+      ...product,
+      currentStock: Math.max(0, currentStock),
+      readyToShip,
+      updatedAt: new Date().toISOString(),
+    };
+    updatedProducts = [...existingProducts];
+    updatedProducts[productIndex] = updatedProduct;
+    await storageService.setItem('products_data', updatedProducts);
+  }
+  const updatedOrder = { ...order, status: 'shipped', updatedAt: new Date().toISOString() };
+  const updatedOrders = [...existingOrders];
+  updatedOrders[orderIndex] = updatedOrder;
+  await saveOrders(updatedOrders);
+  return { order: updatedOrder, products: updatedProducts };
 }

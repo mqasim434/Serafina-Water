@@ -35,10 +35,17 @@ export function Products() {
     size: '',
     description: '',
     price: '',
+    costPrice: '',
     isActive: true,
     isReturnable: true,
+    trackStock: true,
+    lowStockThreshold: 0,
   });
   const [formErrors, setFormErrors] = useState({});
+  const [showAddStock, setShowAddStock] = useState(false);
+  const [addStockProduct, setAddStockProduct] = useState(null);
+  const [addStockQty, setAddStockQty] = useState('');
+  const [addStockError, setAddStockError] = useState('');
 
   // Load products on mount
   useEffect(() => {
@@ -66,8 +73,11 @@ export function Products() {
       size: '',
       description: '',
       price: '',
+      costPrice: '',
       isActive: true,
       isReturnable: true,
+      trackStock: true,
+      lowStockThreshold: 0,
     });
     setFormErrors({});
     setViewMode(VIEW_MODES.ADD);
@@ -80,11 +90,43 @@ export function Products() {
       size: product.size,
       description: product.description || '',
       price: product.price || '',
+      costPrice: product.costPrice ?? '',
       isActive: product.isActive,
       isReturnable: product.isReturnable !== undefined ? product.isReturnable : true,
+      trackStock: product.trackStock !== undefined ? product.trackStock : true,
+      lowStockThreshold: product.lowStockThreshold ?? 0,
     });
     setFormErrors({});
     setViewMode(VIEW_MODES.EDIT);
+  };
+
+  const handleAddStockClick = (product) => {
+    setAddStockProduct(product);
+    setAddStockQty('');
+    setAddStockError('');
+    setShowAddStock(true);
+  };
+
+  const handleAddStockSubmit = async (e) => {
+    e.preventDefault();
+    const qty = parseInt(addStockQty, 10);
+    if (!addStockProduct || !qty || qty <= 0) {
+      setAddStockError('Enter a valid quantity');
+      return;
+    }
+    setAddStockError('');
+    dispatch(setLoading(true));
+    try {
+      const updated = await productsService.addStockPurchase(addStockProduct.id, qty, products);
+      dispatch(updateProductInState(updated));
+      setShowAddStock(false);
+      setAddStockProduct(null);
+      setAddStockQty('');
+    } catch (err) {
+      setAddStockError(err.message);
+    } finally {
+      dispatch(setLoading(false));
+    }
   };
 
   const handleDelete = async (id) => {
@@ -150,7 +192,11 @@ export function Products() {
         size: '',
         description: '',
         price: '',
+        costPrice: '',
         isActive: true,
+        isReturnable: true,
+        trackStock: true,
+        lowStockThreshold: 0,
       });
       setFormErrors({});
     } catch (err) {
@@ -168,8 +214,11 @@ export function Products() {
       size: '',
       description: '',
       price: '',
+      costPrice: '',
       isActive: true,
       isReturnable: true,
+      trackStock: true,
+      lowStockThreshold: 0,
     });
     setFormErrors({});
   };
@@ -196,7 +245,7 @@ export function Products() {
             onClick={handleAdd}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {t('Add Product')}
+            {t('addProduct')}
           </button>
         )}
       </div>
@@ -211,12 +260,12 @@ export function Products() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {activeProducts.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
-              <p className="mb-4">No products found. Add your first product to get started.</p>
+              <p className="mb-4">{t('noProductsFound')}</p>
               <button
                 onClick={handleAdd}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                {t('Add Product')}
+                {t('addProduct')}
               </button>
             </div>
           ) : (
@@ -231,6 +280,12 @@ export function Products() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('price')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('stock')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t('readyToShip')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('description')}
@@ -251,6 +306,21 @@ export function Products() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       Rs. {(product.price || 0).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {product.trackStock !== false ? (product.currentStock ?? 0) : '-'}
+                      {product.trackStock !== false && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddStockClick(product)}
+                          className="ml-2 text-blue-600 hover:text-blue-900 text-xs"
+                        >
+                          {t('addStock')}
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {product.trackStock !== false ? (product.readyToShip ?? 0) : '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {product.description || '-'}
@@ -357,6 +427,22 @@ export function Products() {
               )}
             </div>
 
+            <div>
+              <label htmlFor="costPrice" className="block text-sm font-medium text-gray-700">
+                {t('costPrice')} (Rs.) — {t('adminOnlyProfit')}
+              </label>
+              <input
+                type="number"
+                id="costPrice"
+                min="0"
+                step="0.01"
+                value={formData.costPrice}
+                onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="0.00"
+              />
+            </div>
+
             <div className="flex items-center">
               <input
                 id="isActive"
@@ -383,6 +469,53 @@ export function Products() {
               </label>
             </div>
 
+            <div className="flex items-center">
+              <input
+                id="trackStock"
+                type="checkbox"
+                checked={formData.trackStock}
+                onChange={(e) => setFormData({ ...formData, trackStock: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="trackStock" className="ml-2 block text-sm text-gray-900">
+                {t('trackStock')}
+              </label>
+            </div>
+
+            {formData.trackStock && (
+              <div>
+                <label htmlFor="lowStockThreshold" className="block text-sm font-medium text-gray-700">
+                  {t('lowStockThreshold')}
+                </label>
+                <input
+                  type="number"
+                  id="lowStockThreshold"
+                  min="0"
+                  value={formData.lowStockThreshold}
+                  onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="0"
+                />
+              </div>
+            )}
+
+            {editingProduct && formData.trackStock && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('currentStock')} ({t('readOnly')})
+                  </label>
+                  <p className="mt-1 text-sm text-gray-900">{editingProduct.currentStock ?? 0}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t('readyToShip')}
+                  </label>
+                  <p className="mt-1 text-sm text-gray-500">{editingProduct.readyToShip ?? 0}</p>
+                </div>
+              </>
+            )}
+
             <div className="flex justify-end gap-3 pt-4">
               <button
                 type="button"
@@ -401,6 +534,52 @@ export function Products() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Add Stock Modal (Admin only) */}
+      {showAddStock && addStockProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('addStock')}</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {addStockProduct.name} ({addStockProduct.size}) — {t('currentStock')}: {addStockProduct.currentStock ?? 0}
+            </p>
+            <form onSubmit={handleAddStockSubmit}>
+              <div className="mb-4">
+                <label htmlFor="addStockQty" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('quantityPurchased')}
+                </label>
+                <input
+                  type="number"
+                  id="addStockQty"
+                  min="1"
+                  value={addStockQty}
+                  onChange={(e) => setAddStockQty(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              {addStockError && (
+                <p className="text-sm text-red-600 mb-3">{addStockError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowAddStock(false); setAddStockProduct(null); setAddStockQty(''); setAddStockError(''); }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {t('save')}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

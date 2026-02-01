@@ -100,10 +100,10 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
         <h3 className="text-sm font-semibold text-blue-900 mb-2">{t('safeRanges')}:</h3>
         <div className="text-xs text-blue-800 space-y-1">
           <div>
-            <strong>pH:</strong> {ranges.pHMin} - {ranges.pHMax}
+            <strong>{t('pH')}:</strong> {ranges.pHMin} - {ranges.pHMax}
           </div>
           <div>
-            <strong>TDS:</strong> ≤ {ranges.tdsMax} ppm
+            <strong>{t('tds')}:</strong> ≤ {ranges.tdsMax} ppm
           </div>
           <div>
             <strong>{t('chlorine')}:</strong> {ranges.chlorineMin} - {ranges.chlorineMax}

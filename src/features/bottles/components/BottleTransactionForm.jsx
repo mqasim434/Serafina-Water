@@ -85,7 +85,7 @@ export function BottleTransactionForm({
       {customer && (
         <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
           <p className="text-sm text-blue-800">
-            <span className="font-medium">Customer:</span> {customer.name}
+            <span className="font-medium">{t('customer')}:</span> {customer.name}
           </p>
         </div>
       )}

@@ -43,7 +43,7 @@ export function ReceiptTemplate({
       {/* Receipt Header */}
       <div className="text-center border-b-2 border-gray-800 pb-4 mb-6">
         <h1 className="text-3xl font-bold text-gray-900">{t('appName')}</h1>
-        <p className="text-sm text-gray-600 mt-2">Water Bottle Delivery Service</p>
+        <p className="text-sm text-gray-600 mt-2">{t('waterBottleDeliveryService')}</p>
       </div>
 
       {/* Receipt Info */}

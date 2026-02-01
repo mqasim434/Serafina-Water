@@ -21,6 +21,7 @@ import { Expenses } from './pages/Expenses.jsx';
 import { Reports } from './pages/Reports.jsx';
 import { Settings } from './pages/Settings.jsx';
 import { WaterQuality } from './pages/WaterQuality.jsx';
+import { Stock } from './pages/Stock.jsx';
 import { setUser, setToken, setLoading } from './features/auth/slice.js';
 import { getCurrentAuthUser, loadToken } from './features/auth/service.js';
 import { setLanguage } from './features/i18n/slice.js';
@@ -127,6 +128,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Payments />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/stock"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Stock />
             </Layout>
           </ProtectedRoute>
         }

@@ -43,6 +43,7 @@ export async function saveTransactions(transactions) {
  * @param {string} [notes] - Optional notes
  * @param {string} [createdBy] - User who created the transaction
  * @param {import('./types.js').BottleTransaction[]} existingTransactions - Existing transactions
+ * @param {string} [productId] - Product ID (optional, for returns - used to increase product stock)
  * @returns {Promise<import('./types.js').BottleTransaction>} Created transaction
  */
 export async function createTransaction(
@@ -51,7 +52,8 @@ export async function createTransaction(
   quantity,
   notes,
   createdBy,
-  existingTransactions
+  existingTransactions,
+  productId
 ) {
   if (!customerId || !type || !quantity || quantity <= 0) {
     throw new Error('Invalid transaction data');
@@ -67,6 +69,7 @@ export async function createTransaction(
     type,
     quantity,
     notes: notes || '',
+    ...(productId ? { productId } : {}),
     createdAt: new Date().toISOString(),
     createdBy: createdBy || null,
   };

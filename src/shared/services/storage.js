@@ -51,6 +51,16 @@ class FirebaseStorageService {
           id: item.id || `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           data: item,
         }));
+        const newIds = new Set(items.map((i) => i.id));
+        // Delete any documents that exist in the collection but are not in the new array
+        // (e.g. when an expense/item was deleted, its doc must be removed from Firestore)
+        const existingDocs = await getDocuments(key);
+        const toDelete = existingDocs
+          .filter((d) => d.id !== 'data' && !newIds.has(d.id))
+          .map((d) => d.id);
+        for (const docId of toDelete) {
+          await deleteDocument(key, docId);
+        }
         await batchSetDocuments(key, items);
       } else {
         // Firestore: Store single value/object as a single document with fixed ID

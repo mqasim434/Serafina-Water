@@ -17,6 +17,7 @@
  * @property {TransactionType} type - Transaction type (issued or returned)
  * @property {number} quantity - Number of bottles
  * @property {string} [notes] - Optional notes
+ * @property {string} [productId] - Product ID (optional, for returns - used to increase product stock)
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the transaction
  */

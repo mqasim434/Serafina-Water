@@ -192,11 +192,11 @@ export function Dashboard() {
               </p>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-sm text-white opacity-90">
-                  <span>pH:</span>
+                  <span>{t('pH')}:</span>
                   <span className="font-semibold">{latestEntry.pH}</span>
                 </div>
                 <div className="flex justify-between text-sm text-white opacity-90">
-                  <span>TDS:</span>
+                  <span>{t('tds')}:</span>
                   <span className="font-semibold">{latestEntry.tds} ppm</span>
                 </div>
                 <div className="flex justify-between text-sm text-white opacity-90">
@@ -278,6 +278,39 @@ export function Dashboard() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Stock Overview (Total Stock & Ready to Ship per product) */}
+      {products.some((p) => p.isActive && p.trackStock !== false) && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('stockOverview')}</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('product')}</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('currentStock')}</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('readyToShip')}</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products
+                  .filter((p) => p.isActive && p.trackStock !== false)
+                  .map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 font-medium text-gray-900">
+                        {product.name} ({product.size})
+                      </td>
+                      <td className="px-4 py-2 text-gray-600">{product.currentStock ?? 0}</td>
+                      <td className="px-4 py-2 text-gray-600">
+                        {(product.readyToShip ?? 0) > 0 ? product.readyToShip : '-'}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

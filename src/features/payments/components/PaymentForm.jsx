@@ -158,9 +158,9 @@ export function PaymentForm({
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
         >
           <option value="cash">{t('cash')}</option>
-          <option value="bank">Bank Transfer</option>
-          <option value="mobile">Mobile Payment</option>
-          <option value="other">Other</option>
+          <option value="bank">{t('bankTransfer')}</option>
+          <option value="mobile">{t('mobilePayment')}</option>
+          <option value="other">{t('other')}</option>
         </select>
       </div>
 

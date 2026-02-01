@@ -1,18 +1,20 @@
 /**
  * Return Form Component
  * 
- * Simple form for recording bottle returns
+ * Simple form for recording bottle returns (optionally with product for stock increase)
  */
 
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import { productsService } from '../../products/slice.js';
 
 /**
  * Return Form props
  * @typedef {Object} ReturnFormProps
  * @property {string} customerId - Customer ID
  * @property {number} [maxReturnable] - Maximum bottles that can be returned
- * @property {function(string, number, string): void} onSubmit - Submit handler (customerId, quantity, notes)
+ * @property {function(string, number, string, string|null): void} onSubmit - Submit handler (customerId, quantity, notes, productId)
  * @property {function(): void} onCancel - Cancel handler
  * @property {boolean} isLoading - Loading state
  */
@@ -23,10 +25,13 @@ import { useTranslation } from '../../../shared/hooks/useTranslation.js';
  */
 export function ReturnForm({ customerId, maxReturnable, onSubmit, onCancel, isLoading }) {
   const { t } = useTranslation();
+  const { items: products } = useSelector((state) => state.products);
+  const returnableProducts = productsService.getActiveProducts(products).filter((p) => p.isReturnable !== false);
 
   const [formData, setFormData] = useState({
     quantity: '',
     notes: '',
+    productId: '',
   });
 
   const [errors, setErrors] = useState({});
@@ -64,11 +69,32 @@ export function ReturnForm({ customerId, maxReturnable, onSubmit, onCancel, isLo
       return;
     }
 
-    onSubmit(customerId, parseFloat(formData.quantity), formData.notes);
+    onSubmit(customerId, parseFloat(formData.quantity), formData.notes, formData.productId || null);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {returnableProducts.length > 0 && (
+        <div>
+          <label htmlFor="productId" className="block text-sm font-medium text-gray-700">
+            {t('product')} ({t('forStockReturn')})
+          </label>
+          <select
+            id="productId"
+            name="productId"
+            value={formData.productId}
+            onChange={handleChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="">{t('selectProduct')} ({t('optional')})</option>
+            {returnableProducts.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name} ({product.size})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
           {t('quantity')} <span className="text-red-500">*</span>

@@ -1,15 +1,17 @@
 /**
  * Reports Page
  * 
- * Main page for generating and exporting reports
+ * Main page for generating and exporting reports (Admin only)
  */
 
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 import * as reportsService from '../features/reports/service.js';
 import * as cashService from '../features/cash/service.js';
 import { CustomerActivity } from '../features/reports/components/CustomerActivity.jsx';
+import { ordersService, setOrders } from '../features/orders/slice.js';
+import { productsService, setProducts } from '../features/products/slice.js';
 
 const REPORT_TYPES = {
   CUSTOMER_BOTTLES: 'customer_bottles',
@@ -17,9 +19,12 @@ const REPORT_TYPES = {
   DUE_AMOUNTS: 'due_amounts',
   CASH_FLOW: 'cash_flow',
   CUSTOMER_ACTIVITY: 'customer_activity',
+  PROFIT_REVENUE: 'profit_revenue',
+  CUSTOMER_GROWTH: 'customer_growth',
 };
 
 export function Reports() {
+  const dispatch = useDispatch();
   const { t } = useTranslation();
   const { items: customers } = useSelector((state) => state.customers);
   const { transactions } = useSelector((state) => state.bottles);
@@ -31,6 +36,51 @@ export function Reports() {
   const [selectedReport, setSelectedReport] = useState(REPORT_TYPES.CUSTOMER_BOTTLES);
   const [startDate, setStartDate] = useState(cashService.getTodayDate());
   const [endDate, setEndDate] = useState(cashService.getTodayDate());
+  const [periodFilter, setPeriodFilter] = useState(reportsService.PERIOD_MONTHLY);
+  const [compareLastYear, setCompareLastYear] = useState(false);
+
+  const { startDate: periodStart, endDate: periodEnd } = reportsService.getPeriodRange(
+    periodFilter,
+    periodFilter === reportsService.PERIOD_CUSTOM ? startDate : undefined,
+    periodFilter === reportsService.PERIOD_CUSTOM ? endDate : undefined
+  );
+
+  // Backfill costPriceAtSale for existing orders (one-time; run when orders and products loaded)
+  useEffect(() => {
+    if (orders.length === 0 || products.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const updated = await ordersService.backfillOrdersCostPrice(orders, products);
+        if (!cancelled) {
+          dispatch(setOrders(updated));
+        }
+      } catch (e) {
+        console.warn('Orders cost backfill:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [dispatch, orders.length, products.length]);
+
+  // Load products and orders if empty (for backfill and reports)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (products.length === 0) {
+          const loadedProducts = await productsService.loadProducts();
+          if (!cancelled && loadedProducts.length > 0) dispatch(setProducts(loadedProducts));
+        }
+        if (orders.length === 0) {
+          const loadedOrders = await ordersService.loadOrders();
+          if (!cancelled) dispatch(setOrders(loadedOrders));
+        }
+      } catch (e) {
+        console.warn('Load reports data:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [dispatch, orders.length, products.length]);
 
   const handleExportPDF = () => {
     let data = [];
@@ -107,6 +157,26 @@ export function Reports() {
           Status: r.inactivityStatus,
         }));
         break;
+      case REPORT_TYPES.PROFIT_REVENUE: {
+        const profitReport = reportsService.generateProfitRevenueReport(orders, products, periodStart, periodEnd, { compareLastYear: false });
+        data = profitReport.productBreakdown.map((r) => ({
+          Product: r.productName,
+          'Quantity Sold': r.quantitySold,
+          Revenue: r.revenue,
+          Cost: r.cost,
+          Profit: r.profit,
+        }));
+        headers = ['Product', 'Quantity Sold', 'Revenue', 'Cost', 'Profit'];
+        title = `Profit & Revenue Report (${periodStart} — ${periodEnd})`;
+        break;
+      }
+      case REPORT_TYPES.CUSTOMER_GROWTH: {
+        const growthReport = reportsService.generateCustomerGrowthReport(orders, periodStart, periodEnd, { compareLastYear: false });
+        data = [{ 'Activated Customers': growthReport.activatedCount }];
+        headers = ['Activated Customers'];
+        title = `Customer Growth Report (${periodStart} — ${periodEnd})`;
+        break;
+      }
     }
 
     reportsService.exportToPDF(title, data, headers);
@@ -187,6 +257,26 @@ export function Reports() {
           Status: r.inactivityStatus,
         }));
         break;
+      case REPORT_TYPES.PROFIT_REVENUE: {
+        const profitReport = reportsService.generateProfitRevenueReport(orders, products, periodStart, periodEnd, { compareLastYear: false });
+        data = profitReport.productBreakdown.map((r) => ({
+          Product: r.productName,
+          'Quantity Sold': r.quantitySold,
+          Revenue: r.revenue,
+          Cost: r.cost,
+          Profit: r.profit,
+        }));
+        headers = ['Product', 'Quantity Sold', 'Revenue', 'Cost', 'Profit'];
+        filename = `profit_revenue_${periodStart}_${periodEnd}.csv`;
+        break;
+      }
+      case REPORT_TYPES.CUSTOMER_GROWTH: {
+        const growthReport = reportsService.generateCustomerGrowthReport(orders, periodStart, periodEnd, { compareLastYear: false });
+        data = [{ 'Activated Customers': growthReport.activatedCount }];
+        headers = ['Activated Customers'];
+        filename = `customer_growth_${periodStart}_${periodEnd}.csv`;
+        break;
+      }
     }
 
     reportsService.exportToExcel(data, headers, filename);
@@ -407,6 +497,104 @@ export function Reports() {
       case REPORT_TYPES.CUSTOMER_ACTIVITY:
         return <CustomerActivity customers={customers} orders={orders} products={products} />;
 
+      case REPORT_TYPES.PROFIT_REVENUE: {
+        const profitReport = reportsService.generateProfitRevenueReport(
+          orders,
+          products,
+          periodStart,
+          periodEnd,
+          { compareLastYear }
+        );
+        return (
+          <div>
+            <p className="text-sm text-gray-600 mb-4">
+              {t('period')}: {periodStart} — {periodEnd}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-green-700">{t('totalRevenue')}</p>
+                <p className="text-xl font-bold text-green-900">Rs. {profitReport.totalRevenue.toLocaleString()}</p>
+              </div>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-700">{t('totalCost')}</p>
+                <p className="text-xl font-bold text-red-900">Rs. {profitReport.totalCost.toLocaleString()}</p>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-700">{t('totalProfit')}</p>
+                <p className="text-xl font-bold text-blue-900">Rs. {profitReport.totalProfit.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-sm text-gray-700">{t('profitMargin')}</p>
+                <p className="text-xl font-bold text-gray-900">{profitReport.profitMarginPct}%</p>
+              </div>
+            </div>
+            {profitReport.comparison && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <p className="text-sm font-medium text-amber-900">{t('compareWithLastYear')}</p>
+                <p className="text-sm text-amber-800 mt-1">
+                  {t('totalRevenue')}: Rs. {profitReport.comparison.totalRevenue.toLocaleString()} | {t('totalProfit')}: Rs. {profitReport.comparison.totalProfit.toLocaleString()} | {t('profitMargin')}: {profitReport.comparison.profitMarginPct}%
+                </p>
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('product')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('quantitySold')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('revenue')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('cost')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('profit')}</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {profitReport.productBreakdown.map((row) => (
+                    <tr key={row.productId || row.productName}>
+                      <td className="px-4 py-2 text-sm font-medium text-gray-900">{row.productName}</td>
+                      <td className="px-4 py-2 text-sm text-right text-gray-600">{row.quantitySold}</td>
+                      <td className="px-4 py-2 text-sm text-right text-green-600">Rs. {row.revenue.toLocaleString()}</td>
+                      <td className="px-4 py-2 text-sm text-right text-red-600">Rs. {row.cost.toLocaleString()}</td>
+                      <td className="px-4 py-2 text-sm text-right text-blue-600">Rs. {row.profit.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {profitReport.productBreakdown.length === 0 && (
+                <p className="py-4 text-center text-gray-500 text-sm">{t('noOrders')}</p>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      case REPORT_TYPES.CUSTOMER_GROWTH: {
+        const growthReport = reportsService.generateCustomerGrowthReport(
+          orders,
+          periodStart,
+          periodEnd,
+          { compareLastYear }
+        );
+        return (
+          <div>
+            <p className="text-sm text-gray-600 mb-4">
+              {t('period')}: {periodStart} — {periodEnd}
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
+              <p className="text-sm text-blue-700">{t('activatedCustomers')}</p>
+              <p className="text-3xl font-bold text-blue-900">{growthReport.activatedCount}</p>
+            </div>
+            {growthReport.comparison && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-amber-900">{t('compareWithLastYear')}</p>
+                <p className="text-sm text-amber-800 mt-1">
+                  {t('activatedCustomers')} {growthReport.comparison.activatedCount} · {t('difference')}: {growthReport.comparison.difference >= 0 ? '+' : ''}{growthReport.comparison.difference}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      }
+
       default:
         return null;
     }
@@ -447,7 +635,84 @@ export function Reports() {
           <option value={REPORT_TYPES.DUE_AMOUNTS}>{t('dueAmountsReport')}</option>
           <option value={REPORT_TYPES.CASH_FLOW}>{t('cashFlowReport')}</option>
           <option value={REPORT_TYPES.CUSTOMER_ACTIVITY}>{t('customerActivityReport')}</option>
+          <option value={REPORT_TYPES.PROFIT_REVENUE}>{t('profitRevenueReport')}</option>
+          <option value={REPORT_TYPES.CUSTOMER_GROWTH}>{t('customerGrowthReport')}</option>
         </select>
+
+        {/* Period filters for Profit & Revenue and Customer Growth */}
+        {(selectedReport === REPORT_TYPES.PROFIT_REVENUE || selectedReport === REPORT_TYPES.CUSTOMER_GROWTH) && (
+          <div className="mt-4 space-y-3">
+            <label className="block text-sm font-medium text-gray-700">{t('period')}</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setPeriodFilter(reportsService.PERIOD_DAILY)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${periodFilter === reportsService.PERIOD_DAILY ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {t('daily')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter(reportsService.PERIOD_WEEKLY)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${periodFilter === reportsService.PERIOD_WEEKLY ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {t('weekly')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter(reportsService.PERIOD_MONTHLY)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${periodFilter === reportsService.PERIOD_MONTHLY ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {t('monthly')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter(reportsService.PERIOD_YTD)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${periodFilter === reportsService.PERIOD_YTD ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {t('ytd')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter(reportsService.PERIOD_CUSTOM)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium ${periodFilter === reportsService.PERIOD_CUSTOM ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+              >
+                {t('customRange')}
+              </button>
+            </div>
+            {periodFilter === reportsService.PERIOD_CUSTOM && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('startDate')}</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('endDate')}</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  />
+                </div>
+              </div>
+            )}
+            <label className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                checked={compareLastYear}
+                onChange={(e) => setCompareLastYear(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">{t('compareWithLastYear')}</span>
+            </label>
+          </div>
+        )}
 
         {/* Date Range for Cash Flow */}
         {selectedReport === REPORT_TYPES.CASH_FLOW && (

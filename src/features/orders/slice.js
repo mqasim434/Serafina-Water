@@ -32,6 +32,13 @@ const ordersSlice = createSlice({
       state.items.push(action.payload);
       state.error = null;
     },
+    updateOrderInState: (state, action) => {
+      const index = state.items.findIndex((o) => o.id === action.payload.id);
+      if (index !== -1) {
+        state.items[index] = action.payload;
+      }
+      state.error = null;
+    },
     setCashBalance: (state, action) => {
       state.cashBalance = action.payload;
     },
@@ -46,6 +53,7 @@ export const {
   setLoading,
   setOrders,
   addOrder,
+  updateOrderInState,
   setCashBalance,
   setError,
 } = ordersSlice.actions;

@@ -12,12 +12,13 @@
  * @property {string} customerId - Customer ID
  * @property {string} productId - Product ID
  * @property {number} quantity - Number of bottles ordered
- * @property {number} price - Price per unit
+ * @property {number} price - Price per unit (sale price at time of order)
+ * @property {number} [costPriceAtSale] - Cost price per unit at time of sale (for profit reporting; do not change retroactively)
  * @property {number} totalAmount - Total order amount
  * @property {number} amountPaid - Amount paid at order time
  * @property {number} outstandingAmount - Outstanding amount (totalAmount - amountPaid)
  * @property {string} paymentMethod - Payment method (cash, credit)
- * @property {string} status - Order status (completed, pending)
+ * @property {string} status - Order status (pending, completed, shipped)
  * @property {string} [notes] - Optional notes
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the order

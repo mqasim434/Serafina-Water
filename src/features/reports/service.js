@@ -9,6 +9,219 @@ import * as cashService from '../cash/service.js';
 import { bottlesService } from '../bottles/slice.js';
 import { paymentsService } from '../payments/slice.js';
 
+/** Period filter keys */
+export const PERIOD_DAILY = 'daily';
+export const PERIOD_WEEKLY = 'weekly';
+export const PERIOD_MONTHLY = 'monthly';
+export const PERIOD_YTD = 'ytd';
+export const PERIOD_CUSTOM = 'custom';
+
+/**
+ * Get start and end date for a period (YYYY-MM-DD).
+ * @param {string} period - One of daily, weekly, monthly, ytd, custom
+ * @param {string} [customStart] - For custom: start date YYYY-MM-DD
+ * @param {string} [customEnd] - For custom: end date YYYY-MM-DD
+ * @returns {{ startDate: string, endDate: string }}
+ */
+export function getPeriodRange(period, customStart, customEnd) {
+  const now = new Date();
+  const today = cashService.getTodayDate();
+
+  if (period === PERIOD_CUSTOM && customStart && customEnd) {
+    return { startDate: customStart, endDate: customEnd };
+  }
+
+  if (period === PERIOD_DAILY) {
+    return { startDate: today, endDate: today };
+  }
+
+  if (period === PERIOD_WEEKLY) {
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now);
+    monday.setDate(diff);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return {
+      startDate: cashService.formatDate(monday),
+      endDate: cashService.formatDate(sunday),
+    };
+  }
+
+  if (period === PERIOD_MONTHLY) {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return {
+      startDate: cashService.formatDate(first),
+      endDate: cashService.formatDate(last),
+    };
+  }
+
+  if (period === PERIOD_YTD) {
+    const first = new Date(now.getFullYear(), 0, 1);
+    return {
+      startDate: cashService.formatDate(first),
+      endDate: today,
+    };
+  }
+
+  return { startDate: today, endDate: today };
+}
+
+/**
+ * Get same period last year (start/end shifted back one year).
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate - YYYY-MM-DD
+ * @returns {{ startDate: string, endDate: string }}
+ */
+export function getSamePeriodLastYear(startDate, endDate) {
+  const s = new Date(startDate + 'T12:00:00');
+  const e = new Date(endDate + 'T12:00:00');
+  s.setFullYear(s.getFullYear() - 1);
+  e.setFullYear(e.getFullYear() - 1);
+  return {
+    startDate: cashService.formatDate(s),
+    endDate: cashService.formatDate(e),
+  };
+}
+
+/**
+ * Generate Profit & Revenue report (Admin only). Uses cost at time of sale.
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {import('../products/types.js').Product[]} products - All products
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate - YYYY-MM-DD
+ * @param {{ compareLastYear?: boolean }} [options]
+ * @returns {{ totalRevenue: number, totalCost: number, totalProfit: number, profitMarginPct: number, productBreakdown: Array<{ productId: string, productName: string, quantitySold: number, revenue: number, cost: number, profit: number }>, comparison?: { totalRevenue: number, totalCost: number, totalProfit: number, profitMarginPct: number } }}
+ */
+export function generateProfitRevenueReport(orders, products, startDate, endDate, options = {}) {
+  const orderDate = (order) => cashService.formatDate(new Date(order.createdAt));
+  const inRange = (o) => {
+    const d = orderDate(o);
+    return d >= startDate && d <= endDate;
+  };
+  const filtered = orders.filter(inRange);
+
+  let totalRevenue = 0;
+  let totalCost = 0;
+  const byProduct = new Map();
+
+  filtered.forEach((order) => {
+    const revenue = order.quantity * (order.price || 0);
+    const costPerUnit = order.costPriceAtSale ?? 0;
+    const cost = order.quantity * costPerUnit;
+    const profit = revenue - cost;
+    totalRevenue += revenue;
+    totalCost += cost;
+
+    const product = products.find((p) => p.id === order.productId);
+    const productName = product ? `${product.name} (${product.size})` : order.productId || 'Unknown';
+    const key = order.productId || 'unknown';
+    if (!byProduct.has(key)) {
+      byProduct.set(key, {
+        productId: order.productId,
+        productName,
+        quantitySold: 0,
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+      });
+    }
+    const row = byProduct.get(key);
+    row.quantitySold += order.quantity;
+    row.revenue += revenue;
+    row.cost += cost;
+    row.profit += profit;
+  });
+
+  const totalProfit = totalRevenue - totalCost;
+  const profitMarginPct = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 10000) / 100 : 0;
+
+  const productBreakdown = Array.from(byProduct.values()).sort((a, b) => b.revenue - a.revenue);
+
+  let comparison;
+  if (options.compareLastYear) {
+    const { startDate: lyStart, endDate: lyEnd } = getSamePeriodLastYear(startDate, endDate);
+    const lyFiltered = orders.filter((o) => {
+      const d = orderDate(o);
+      return d >= lyStart && d <= lyEnd;
+    });
+    let lyRevenue = 0;
+    let lyCost = 0;
+    lyFiltered.forEach((o) => {
+      lyRevenue += o.quantity * (o.price || 0);
+      lyCost += o.quantity * (o.costPriceAtSale ?? 0);
+    });
+    const lyProfit = lyRevenue - lyCost;
+    const lyMargin = lyRevenue > 0 ? Math.round((lyProfit / lyRevenue) * 10000) / 100 : 0;
+    comparison = {
+      totalRevenue: lyRevenue,
+      totalCost: lyCost,
+      totalProfit: lyProfit,
+      profitMarginPct: lyMargin,
+    };
+  }
+
+  return {
+    totalRevenue,
+    totalCost,
+    totalProfit,
+    profitMarginPct,
+    productBreakdown,
+    ...(comparison ? { comparison } : {}),
+  };
+}
+
+/**
+ * Real Customer Growth: count customers whose first order (activation) falls in the selected period.
+ * Ignores customers with zero orders.
+ * @param {import('../orders/types.js').Order[]} orders - All orders
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate - YYYY-MM-DD
+ * @param {{ compareLastYear?: boolean }} [options]
+ * @returns {{ activatedCount: number, comparison?: { activatedCount: number, difference: number } }}
+ */
+export function generateCustomerGrowthReport(orders, startDate, endDate, options = {}) {
+  const orderDate = (order) => cashService.formatDate(new Date(order.createdAt));
+  const firstOrderByCustomer = new Map();
+  orders.forEach((order) => {
+    const d = orderDate(order);
+    if (!firstOrderByCustomer.has(order.customerId)) {
+      firstOrderByCustomer.set(order.customerId, d);
+    } else {
+      const existing = firstOrderByCustomer.get(order.customerId);
+      if (d < existing) firstOrderByCustomer.set(order.customerId, d);
+    }
+  });
+
+  let activatedCount = 0;
+  firstOrderByCustomer.forEach((activationDate) => {
+    if (activationDate >= startDate && activationDate <= endDate) {
+      activatedCount += 1;
+    }
+  });
+
+  let comparison;
+  if (options.compareLastYear) {
+    const { startDate: lyStart, endDate: lyEnd } = getSamePeriodLastYear(startDate, endDate);
+    let lyCount = 0;
+    firstOrderByCustomer.forEach((activationDate) => {
+      if (activationDate >= lyStart && activationDate <= lyEnd) {
+        lyCount += 1;
+      }
+    });
+    comparison = {
+      activatedCount: lyCount,
+      difference: activatedCount - lyCount,
+    };
+  }
+
+  return {
+    activatedCount,
+    ...(comparison ? { comparison } : {}),
+  };
+}
+
 /**
  * Generate customer-wise bottles report (outstanding = returnable only)
  * @param {import('../customers/types.js').Customer[]} customers - All customers

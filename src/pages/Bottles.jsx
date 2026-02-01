@@ -25,8 +25,9 @@ import { setCustomers } from '../features/customers/slice.js';
 import { customersService } from '../features/customers/slice.js';
 import { setProducts } from '../features/products/slice.js';
 import { productsService } from '../features/products/slice.js';
-import { setOrders, addOrder } from '../features/orders/slice.js';
+import { setOrders, addOrder, updateOrderInState } from '../features/orders/slice.js';
 import { ordersService } from '../features/orders/slice.js';
+import { updateProductInState } from '../features/products/slice.js';
 import { setPayments, addPayment } from '../features/payments/slice.js';
 import { paymentsService } from '../features/payments/slice.js';
 import { setCashBalance } from '../features/orders/slice.js';
@@ -115,7 +116,8 @@ export function Bottles() {
         cashBalanceObj,
         transactions,
         payments,
-        user?.id || null
+        user?.id || null,
+        products
       );
 
       // Update Redux state
@@ -164,8 +166,8 @@ export function Bottles() {
     }
   };
 
-  // Handle return submission
-  const handleReturnSubmit = async (customerId, quantity, notes) => {
+  // Handle return submission (productId optional - when provided, increases product stock for returnable)
+  const handleReturnSubmit = async (customerId, quantity, notes, productId) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
     try {
@@ -183,12 +185,43 @@ export function Bottles() {
         quantity,
         notes,
         user?.id || null,
-        transactions
+        transactions,
+        productId || undefined
       );
 
       dispatch(addTransaction(newTransaction));
+
+      // For returnable items: increase product stock only (not Ready to Ship)
+      if (productId) {
+        try {
+          const updatedProduct = await productsService.increaseStockForReturn(productId, quantity, products);
+          dispatch(updateProductInState(updatedProduct));
+        } catch (stockErr) {
+          dispatch(setError(stockErr.message));
+        }
+      }
+
       setSelectedCustomerId(customerId);
       setActiveTab(TABS.ORDERS); // Switch back to orders tab
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  // Mark order as shipped (decreases stock and Ready to Ship)
+  const handleMarkAsShipped = async (orderId) => {
+    dispatch(setLoading(true));
+    dispatch(setError(null));
+    try {
+      const { order: updatedOrder, products: updatedProducts } = await ordersService.markOrderAsShipped(
+        orderId,
+        orders,
+        products
+      );
+      dispatch(updateOrderInState(updatedOrder));
+      dispatch(setProducts(updatedProducts));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -347,6 +380,7 @@ export function Bottles() {
 
       {/* Orders Tab */}
       {activeTab === TABS.ORDERS && (
+        <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('placeOrder')}</h2>
@@ -384,6 +418,66 @@ export function Bottles() {
               </>
             )}
           </div>
+        </div>
+
+        {/* Recent Orders - Mark as Shipped */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('recentOrders')}</h2>
+          {orders.length === 0 ? (
+            <p className="text-gray-500 text-sm">{t('noOrders')}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('order')} #</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('customer')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('product')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('quantity')}</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('status')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {[...orders]
+                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                    .slice(0, 25)
+                    .map((order) => {
+                      const customer = customers.find((c) => c.id === order.customerId);
+                      const product = products.find((p) => p.id === order.productId);
+                      return (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 font-medium">{order.orderNumber ?? order.id}</td>
+                          <td className="px-4 py-2">{customer?.name ?? order.customerId}</td>
+                          <td className="px-4 py-2">{product ? `${product.name} (${product.size})` : '-'}</td>
+                          <td className="px-4 py-2">{order.quantity}</td>
+                          <td className="px-4 py-2">
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                              order.status === 'shipped' ? 'bg-green-100 text-green-800' : order.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.status === 'shipped' ? t('shipped') : order.status === 'completed' ? t('completed') : t('pending')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {order.status !== 'shipped' && (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkAsShipped(order.id)}
+                                disabled={isLoading}
+                                className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50"
+                              >
+                                {t('markAsShipped')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
         </div>
       )}
 

@@ -51,6 +51,24 @@
  */
 
 /**
+ * Profit & Revenue report (Admin only)
+ * @typedef {Object} ProfitRevenueReport
+ * @property {number} totalRevenue - Total revenue
+ * @property {number} totalCost - Total cost
+ * @property {number} totalProfit - Total profit
+ * @property {number} profitMarginPct - Profit margin %
+ * @property {Array<{ productId: string, productName: string, quantitySold: number, revenue: number, cost: number, profit: number }>} productBreakdown - Per-product breakdown
+ * @property {{ totalRevenue: number, totalCost: number, totalProfit: number, profitMarginPct: number }} [comparison] - Same period last year
+ */
+
+/**
+ * Customer Growth report (Admin only)
+ * @typedef {Object} CustomerGrowthReport
+ * @property {number} activatedCount - Customers whose first order was in period
+ * @property {{ activatedCount: number, difference: number }} [comparison] - Same period last year
+ */
+
+/**
  * Customer activity report
  * @typedef {Object} CustomerActivityReport
  * @property {string} customerId - Customer ID

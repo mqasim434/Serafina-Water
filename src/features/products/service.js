@@ -56,12 +56,16 @@ export async function loadProducts() {
       return [];
     }
     
-    // Ensure all products have a price field (backward compatibility)
-    // Products from Firestore already have the correct structure: { id, name, size, price, ... }
+    // Ensure all products have required fields (backward compatibility)
     return products.map(product => ({
       ...product,
       price: product.price !== undefined ? product.price : 0,
+      costPrice: product.costPrice !== undefined ? product.costPrice : 0,
       isActive: product.isActive !== undefined ? product.isActive : true,
+      trackStock: product.trackStock !== undefined ? product.trackStock : true,
+      lowStockThreshold: product.lowStockThreshold !== undefined ? product.lowStockThreshold : 0,
+      currentStock: product.currentStock !== undefined ? product.currentStock : 0,
+      readyToShip: product.readyToShip !== undefined ? product.readyToShip : 0,
     }));
   } catch (error) {
     console.error('Error loading products:', error);
@@ -105,8 +109,13 @@ export async function createProduct(data, existingProducts) {
     size: data.size.trim(),
     description: (data.description || '').trim(),
     price: parseFloat(data.price) || 0,
+    costPrice: data.costPrice !== undefined && data.costPrice !== '' ? parseFloat(data.costPrice) : 0,
     isActive: data.isActive !== undefined ? data.isActive : true,
     isReturnable: data.isReturnable !== undefined ? data.isReturnable : true,
+    trackStock: data.trackStock !== undefined ? data.trackStock : true,
+    lowStockThreshold: typeof data.lowStockThreshold === 'number' ? data.lowStockThreshold : (data.lowStockThreshold !== '' && data.lowStockThreshold != null ? parseInt(data.lowStockThreshold, 10) : 0),
+    currentStock: 0,
+    readyToShip: 0,
     createdAt: now,
     updatedAt: now,
   };
@@ -143,14 +152,20 @@ export async function updateProduct(id, data, existingProducts) {
     throw new Error(`Product with size ${data.size} already exists`);
   }
 
+  const existing = existingProducts[productIndex];
   const updatedProduct = {
-    ...existingProducts[productIndex],
+    ...existing,
     name: data.name.trim(),
     size: data.size.trim(),
     description: (data.description || '').trim(),
-    price: parseFloat(data.price) || existingProducts[productIndex].price || 0,
+    price: parseFloat(data.price) || existing.price || 0,
+    costPrice: data.costPrice !== undefined && data.costPrice !== '' ? parseFloat(data.costPrice) : (existing.costPrice ?? 0),
     isActive: data.isActive !== undefined ? data.isActive : true,
-    isReturnable: data.isReturnable !== undefined ? data.isReturnable : (existingProducts[productIndex].isReturnable !== undefined ? existingProducts[productIndex].isReturnable : true),
+    isReturnable: data.isReturnable !== undefined ? data.isReturnable : (existing.isReturnable !== undefined ? existing.isReturnable : true),
+    trackStock: data.trackStock !== undefined ? data.trackStock : (existing.trackStock !== undefined ? existing.trackStock : true),
+    lowStockThreshold: typeof data.lowStockThreshold === 'number' ? data.lowStockThreshold : (data.lowStockThreshold !== '' && data.lowStockThreshold != null ? parseInt(data.lowStockThreshold, 10) : (existing.lowStockThreshold || 0)),
+    currentStock: existing.currentStock !== undefined ? existing.currentStock : 0,
+    readyToShip: existing.readyToShip !== undefined ? existing.readyToShip : 0,
     updatedAt: new Date().toISOString(),
   };
 
@@ -200,4 +215,107 @@ export function findProductById(id, products) {
  */
 export function getActiveProducts(products) {
   return products.filter((p) => p.isActive);
+}
+
+/**
+ * Update Ready to Ship quantity for a product (Admin + Staff). Does not change total stock.
+ * Ready to Ship cannot exceed total stock.
+ * @param {string} productId - Product ID
+ * @param {number} readyToShip - New Ready to Ship quantity
+ * @param {import('./types.js').Product[]} existingProducts - Existing products array
+ * @returns {Promise<import('./types.js').Product>} Updated product
+ */
+export async function updateReadyToShip(productId, readyToShip, existingProducts) {
+  const productIndex = existingProducts.findIndex((p) => p.id === productId);
+  if (productIndex === -1) {
+    throw new Error('Product not found');
+  }
+  const product = existingProducts[productIndex];
+  const currentStock = product.currentStock !== undefined ? product.currentStock : 0;
+  const value = Math.max(0, Math.floor(Number(readyToShip)) || 0);
+  if (value > currentStock) {
+    throw new Error('Ready to Ship cannot exceed total stock');
+  }
+  const updatedProduct = {
+    ...product,
+    readyToShip: value,
+    updatedAt: new Date().toISOString(),
+  };
+  const updatedProducts = [...existingProducts];
+  updatedProducts[productIndex] = updatedProduct;
+  await saveProducts(updatedProducts);
+  return updatedProduct;
+}
+
+/**
+ * Add stock purchase (Admin only). Increases currentStock.
+ * @param {string} productId - Product ID
+ * @param {number} quantity - Quantity purchased
+ * @param {import('./types.js').Product[]} existingProducts - Existing products array
+ * @returns {Promise<import('./types.js').Product>} Updated product
+ */
+export async function addStockPurchase(productId, quantity, existingProducts) {
+  const productIndex = existingProducts.findIndex((p) => p.id === productId);
+  if (productIndex === -1) {
+    throw new Error('Product not found');
+  }
+  const qty = Math.max(0, Math.floor(Number(quantity)) || 0);
+  if (qty <= 0) {
+    throw new Error('Quantity must be greater than 0');
+  }
+  const product = existingProducts[productIndex];
+  const currentStock = (product.currentStock !== undefined ? product.currentStock : 0) + qty;
+  const updatedProduct = {
+    ...product,
+    currentStock,
+    updatedAt: new Date().toISOString(),
+  };
+  const updatedProducts = [...existingProducts];
+  updatedProducts[productIndex] = updatedProduct;
+  await saveProducts(updatedProducts);
+  return updatedProduct;
+}
+
+/**
+ * Get products that are tracked for stock and below low stock threshold
+ * @param {import('./types.js').Product[]} products - Products array
+ * @returns {import('./types.js').Product[]} Products below threshold
+ */
+export function getLowStockProducts(products) {
+  return products.filter(
+    (p) =>
+      p.isActive &&
+      p.trackStock !== false &&
+      (p.currentStock ?? 0) < (p.lowStockThreshold ?? 0)
+  );
+}
+
+/**
+ * Increase stock for a returnable product when bottles are returned (stock only, not Ready to Ship)
+ * @param {string} productId - Product ID
+ * @param {number} quantity - Quantity returned
+ * @param {import('./types.js').Product[]} existingProducts - Existing products array
+ * @returns {Promise<import('./types.js').Product>} Updated product
+ */
+export async function increaseStockForReturn(productId, quantity, existingProducts) {
+  const productIndex = existingProducts.findIndex((p) => p.id === productId);
+  if (productIndex === -1) {
+    throw new Error('Product not found');
+  }
+  const product = existingProducts[productIndex];
+  if (!product.isReturnable) {
+    throw new Error('Product is not returnable');
+  }
+  const qty = Math.max(0, Math.floor(Number(quantity)) || 0);
+  if (qty <= 0) return product;
+  const currentStock = (product.currentStock ?? 0) + qty;
+  const updatedProduct = {
+    ...product,
+    currentStock,
+    updatedAt: new Date().toISOString(),
+  };
+  const updatedProducts = [...existingProducts];
+  updatedProducts[productIndex] = updatedProduct;
+  await saveProducts(updatedProducts);
+  return updatedProduct;
 }

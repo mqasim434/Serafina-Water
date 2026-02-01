@@ -111,7 +111,7 @@ export function Settings() {
         settings
       );
       dispatch(setSettings(updated));
-      alert(t('Settings Saved'));
+      alert(t('settingsSaved'));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -126,7 +126,7 @@ export function Settings() {
       const updated = await settingsService.updateDefaultLanguage(newLanguage, settings);
       dispatch(setSettings(updated));
       dispatch(setLanguage(newLanguage));
-      alert(t('Settings Saved'));
+      alert(t('settingsSaved'));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -189,7 +189,7 @@ export function Settings() {
       };
       await waterQualityService.saveWaterQualityRanges(updatedRanges);
       dispatch(setRanges(updatedRanges));
-      alert(t('Settings Saved'));
+      alert(t('settingsSaved'));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -231,7 +231,7 @@ export function Settings() {
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {t('Company Info')}
+                {t('companyInfo')}
               </button>
               <button
                 onClick={() => setActiveSection(SETTINGS_SECTIONS.LANGUAGE)}
@@ -241,7 +241,7 @@ export function Settings() {
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {t('Language')}
+                {t('language')}
               </button>
               <button
                 onClick={() => setActiveSection(SETTINGS_SECTIONS.CATEGORIES)}
@@ -271,11 +271,11 @@ export function Settings() {
         <div className="lg:col-span-3">
           {activeSection === SETTINGS_SECTIONS.COMPANY && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('Company Info')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('companyInfo')}</h2>
               <form onSubmit={handleCompanySubmit} className="space-y-4">
                 <div>
                   <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-                    {t('Company Name')}
+                    {t('companyName')}
                   </label>
                   <input
                     type="text"
@@ -362,10 +362,10 @@ export function Settings() {
 
           {activeSection === SETTINGS_SECTIONS.LANGUAGE && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('Default Language')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('defaultLanguage')}</h2>
               <div>
                 <label htmlFor="defaultLanguage" className="block text-sm font-medium text-gray-700">
-                  {t('Default Language')}
+                  {t('defaultLanguage')}
                 </label>
                 <select
                   id="defaultLanguage"
@@ -373,8 +373,8 @@ export function Settings() {
                   onChange={handleLanguageChange}
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
-                  <option value="en">English</option>
-                  <option value="ur">Urdu</option>
+                  <option value="en">{t('english')}</option>
+                  <option value="ur">{t('urdu')}</option>
                 </select>
               </div>
             </div>
@@ -390,7 +390,7 @@ export function Settings() {
 
           {activeSection === SETTINGS_SECTIONS.WATER_QUALITY && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('Water Quality Ranges')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('waterQualityRanges')}</h2>
               <form onSubmit={handleWaterQualitySubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>

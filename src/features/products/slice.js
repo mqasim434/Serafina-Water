@@ -12,6 +12,7 @@ const initialState = {
   isLoading: false,
   error: null,
   selectedId: null,
+  dismissedLowStockProductIds: [], // Low stock alert dismissed per product (once per session)
 };
 
 const productsSlice = createSlice({
@@ -56,6 +57,12 @@ const productsSlice = createSlice({
     setSelectedId: (state, action) => {
       state.selectedId = action.payload;
     },
+    dismissLowStockAlert: (state, action) => {
+      const id = action.payload;
+      if (id && !state.dismissedLowStockProductIds.includes(id)) {
+        state.dismissedLowStockProductIds.push(id);
+      }
+    },
   },
 });
 
@@ -67,6 +74,7 @@ export const {
   removeProduct,
   setError,
   setSelectedId,
+  dismissLowStockAlert,
 } = productsSlice.actions;
 
 // Export service functions for use in thunks/components

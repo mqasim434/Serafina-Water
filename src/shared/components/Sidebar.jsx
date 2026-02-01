@@ -19,6 +19,7 @@ function getMenuItems(isAdminUser) {
     { path: '/', label: 'dashboard' },
     { path: '/customers', label: 'customers' },
     { path: '/bottles', label: 'bottles' },
+    { path: '/stock', label: 'stock' },
     { path: '/payments', label: 'payments' },
     { path: '/expenses', label: 'expenses' },
     { path: '/water-quality', label: 'waterQuality' },

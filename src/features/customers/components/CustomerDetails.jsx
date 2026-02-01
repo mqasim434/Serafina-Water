@@ -146,7 +146,7 @@ export function CustomerDetails({ customer, onEdit, onDelete }) {
 
         {customer.createdAt && (
           <div>
-            <label className="block text-sm font-medium text-gray-500">Created</label>
+            <label className="block text-sm font-medium text-gray-500">{t('created')}</label>
             <p className="mt-1 text-sm text-gray-900">
               {new Date(customer.createdAt).toLocaleString()}
             </p>
