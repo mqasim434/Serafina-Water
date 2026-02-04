@@ -28,7 +28,12 @@
  * @property {number} amountPaid - Amount paid at order time
  * @property {number} outstandingAmount - Outstanding amount (totalAmount - amountPaid)
  * @property {string} paymentMethod - Payment method (cash, credit)
- * @property {string} status - Order status (pending, completed, shipped)
+ * @property {string} status - Order status (pending, completed, shipped, ready, delivered)
+ * @property {string} [delivery_date] - Delivery date YYYY-MM-DD (default today when created)
+ * @property {string} [deliveryProofPhotoUrl] - ImageKit URL of delivery proof photo (one per delivery)
+ * @property {string} [deliveryProofFileId] - ImageKit file ID (for 6-week auto-delete)
+ * @property {string} [deliveredAt] - When order was marked delivered (ISO string)
+ * @property {string} [deliveredBy] - User ID who marked delivered
  * @property {string} [notes] - Optional notes
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the order

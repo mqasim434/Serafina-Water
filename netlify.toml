@@ -2,6 +2,13 @@
   command = "npm run build"
   publish = "dist"
 
+# ImageKit auth: same path as Vercel so one .env works
+[[redirects]]
+  from = "/api/imagekit-auth"
+  to = "/.netlify/functions/imagekit-auth"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
