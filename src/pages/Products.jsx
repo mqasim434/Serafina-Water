@@ -163,6 +163,20 @@ export function Products() {
     if (formData.price && (isNaN(formData.price) || parseFloat(formData.price) < 0)) {
       newErrors.price = 'Price must be a non-negative number';
     }
+    if (formData.costPrice === '' || formData.costPrice === undefined || formData.costPrice === null) {
+      newErrors.costPrice = 'Cost price is required';
+    }
+    if (formData.costPrice !== '' && formData.costPrice != null && (isNaN(formData.costPrice) || parseFloat(formData.costPrice) < 0)) {
+      newErrors.costPrice = 'Cost price must be a non-negative number';
+    }
+    if (formData.trackStock) {
+      const threshold = formData.lowStockThreshold;
+      if (threshold === '' || threshold === undefined || threshold === null) {
+        newErrors.lowStockThreshold = 'Low stock threshold is required';
+      } else if (isNaN(threshold) || parseInt(threshold, 10) < 0) {
+        newErrors.lowStockThreshold = 'Low stock threshold must be a non-negative number';
+      }
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setFormErrors(newErrors);
@@ -429,18 +443,24 @@ export function Products() {
 
             <div>
               <label htmlFor="costPrice" className="block text-sm font-medium text-gray-700">
-                {t('costPrice')} (Rs.) — {t('adminOnlyProfit')}
+                {t('costPrice')} (Rs.) — {t('adminOnlyProfit')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 id="costPrice"
                 min="0"
                 step="0.01"
+                required
                 value={formData.costPrice}
                 onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                  formErrors.costPrice ? 'border-red-300' : 'border-gray-300'
+                }`}
                 placeholder="0.00"
               />
+              {formErrors.costPrice && (
+                <p className="mt-1 text-sm text-red-600">{formErrors.costPrice}</p>
+              )}
             </div>
 
             <div className="flex items-center">
@@ -485,17 +505,23 @@ export function Products() {
             {formData.trackStock && (
               <div>
                 <label htmlFor="lowStockThreshold" className="block text-sm font-medium text-gray-700">
-                  {t('lowStockThreshold')}
+                  {t('lowStockThreshold')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   id="lowStockThreshold"
                   min="0"
+                  required
                   value={formData.lowStockThreshold}
                   onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value })}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
+                    formErrors.lowStockThreshold ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="0"
                 />
+                {formErrors.lowStockThreshold && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.lowStockThreshold}</p>
+                )}
               </div>
             )}
 

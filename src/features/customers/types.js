@@ -34,6 +34,7 @@
  * @property {PreferredLanguage} preferredLanguage - Preferred language (en or ur)
  * @property {CustomerProductPrices} productPrices - Product prices per product ID
  * @property {CustomerBottlePrices} [bottlePrices] - Legacy bottle prices (for backward compatibility)
+ * @property {boolean} [isActive] - Whether customer can place orders, return bottles, make payments (default true)
  * @property {string} [createdAt] - Creation timestamp (ISO string)
  * @property {string} [updatedAt] - Last update timestamp (ISO string)
  */

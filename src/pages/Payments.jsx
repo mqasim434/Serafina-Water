@@ -283,7 +283,7 @@ export function Payments() {
                   </div>
                 ) : (
                   <CustomerSearch
-                    customers={customers}
+                    customers={customersService.getActiveCustomers(customers)}
                     value={selectedCustomerId}
                     onChange={setSelectedCustomerId}
                     required={true}

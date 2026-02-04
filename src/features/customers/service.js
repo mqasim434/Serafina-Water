@@ -89,6 +89,7 @@ export async function createCustomer(data, existingCustomers) {
     address: data.address.trim(),
     preferredLanguage: data.preferredLanguage,
     productPrices: productPrices,
+    isActive: true,
     createdAt: now,
     updatedAt: now,
   };
@@ -143,19 +144,56 @@ export async function updateCustomer(id, data, existingCustomers) {
 }
 
 /**
- * Delete a customer
+ * Get customers that are active (can place orders, return bottles, make payments)
+ * @param {import('./types.js').Customer[]} customers - All customers
+ * @returns {import('./types.js').Customer[]} Active customers only
+ */
+export function getActiveCustomers(customers) {
+  return customers.filter((c) => c.isActive !== false);
+}
+
+/**
+ * Deactivate a customer (they cannot place orders, return bottles, or make payments)
  * @param {string} id - Customer ID
  * @param {import('./types.js').Customer[]} existingCustomers - Existing customers array
- * @returns {Promise<void>}
+ * @returns {Promise<import('./types.js').Customer>} Updated customer
  */
-export async function deleteCustomer(id, existingCustomers) {
-  // Delete the document from Firestore
-  const { deleteDocument } = await import('../../shared/services/firestore.js');
-  await deleteDocument(STORAGE_KEY, id);
-  
-  // Also update the array (for consistency, though Firestore is source of truth)
-  const updatedCustomers = existingCustomers.filter((c) => c.id !== id);
+export async function deactivateCustomer(id, existingCustomers) {
+  const customerIndex = existingCustomers.findIndex((c) => c.id === id);
+  if (customerIndex === -1) {
+    throw new Error('Customer not found');
+  }
+  const updatedCustomer = {
+    ...existingCustomers[customerIndex],
+    isActive: false,
+    updatedAt: new Date().toISOString(),
+  };
+  const updatedCustomers = [...existingCustomers];
+  updatedCustomers[customerIndex] = updatedCustomer;
   await saveCustomers(updatedCustomers);
+  return updatedCustomer;
+}
+
+/**
+ * Activate a customer (re-enable orders, returns, payments)
+ * @param {string} id - Customer ID
+ * @param {import('./types.js').Customer[]} existingCustomers - Existing customers array
+ * @returns {Promise<import('./types.js').Customer>} Updated customer
+ */
+export async function activateCustomer(id, existingCustomers) {
+  const customerIndex = existingCustomers.findIndex((c) => c.id === id);
+  if (customerIndex === -1) {
+    throw new Error('Customer not found');
+  }
+  const updatedCustomer = {
+    ...existingCustomers[customerIndex],
+    isActive: true,
+    updatedAt: new Date().toISOString(),
+  };
+  const updatedCustomers = [...existingCustomers];
+  updatedCustomers[customerIndex] = updatedCustomer;
+  await saveCustomers(updatedCustomers);
+  return updatedCustomer;
 }
 
 /**

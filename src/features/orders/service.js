@@ -110,7 +110,37 @@ export function calculateOrderTotal(quantity, price) {
 }
 
 /**
- * Validate order data
+ * Get line items from an order (supports legacy single-item and multi-item)
+ * @param {import('./types.js').Order} order - Order
+ * @returns {{ productId: string, quantity: number, price: number, costPriceAtSale?: number }[]}
+ */
+export function getOrderLineItems(order) {
+  if (order.items && order.items.length > 0) {
+    return order.items;
+  }
+  if (order.productId != null) {
+    return [{
+      productId: order.productId,
+      quantity: order.quantity ?? 0,
+      price: order.price ?? 0,
+      costPriceAtSale: order.costPriceAtSale,
+    }];
+  }
+  return [];
+}
+
+/**
+ * Get total quantity across all line items in an order
+ * @param {import('./types.js').Order} order - Order
+ * @returns {number}
+ */
+export function getOrderTotalQuantity(order) {
+  const items = getOrderLineItems(order);
+  return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+}
+
+/**
+ * Validate order data (single item or items array)
  * @param {import('./types.js').OrderFormData} data - Order form data
  * @returns {{isValid: boolean, error?: string}} Validation result
  */
@@ -119,24 +149,38 @@ export function validateOrder(data) {
     return { isValid: false, error: 'Customer is required' };
   }
 
-  if (!data.productId) {
-    return { isValid: false, error: 'Product is required' };
+  const items = data.items && data.items.length > 0
+    ? data.items
+    : data.productId
+      ? [{ productId: data.productId, quantity: data.quantity, price: data.price }]
+      : [];
+
+  if (items.length === 0) {
+    return { isValid: false, error: 'At least one product is required' };
   }
 
-  if (!data.quantity || data.quantity <= 0) {
-    return { isValid: false, error: 'Quantity must be greater than 0' };
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item.productId) {
+      return { isValid: false, error: `Product is required for item ${i + 1}` };
+    }
+    if (!item.quantity || item.quantity <= 0) {
+      return { isValid: false, error: `Quantity must be greater than 0 for item ${i + 1}` };
+    }
+    if (!item.price || item.price <= 0) {
+      return { isValid: false, error: `Price must be greater than 0 for item ${i + 1}` };
+    }
   }
 
-  if (!data.price || data.price <= 0) {
-    return { isValid: false, error: 'Price must be greater than 0' };
-  }
-
-  if (data.amountPaid === undefined || data.amountPaid === null || data.amountPaid < 0) {
+  const totalAmount = items.reduce(
+    (sum, item) => sum + calculateOrderTotal(item.quantity, item.price),
+    0
+  );
+  const amountPaid = data.amountPaid ?? 0;
+  if (amountPaid < 0) {
     return { isValid: false, error: 'Amount paid must be 0 or greater' };
   }
-
-  const totalAmount = calculateOrderTotal(data.quantity, data.price);
-  if (data.amountPaid > totalAmount) {
+  if (amountPaid > totalAmount) {
     return { isValid: false, error: 'Amount paid cannot exceed total amount' };
   }
 
@@ -169,28 +213,52 @@ export async function createOrder(
     throw new Error(validation.error);
   }
 
-  // Cost at sale: store product cost at time of order (for profit reporting; never change retroactively)
-  const product = existingProducts.find((p) => p.id === data.productId);
-  const costPriceAtSale = product ? (product.costPrice ?? 0) : 0;
+  const useItems = data.items && data.items.length > 0;
+  const lineItems = useItems
+    ? data.items.map((item) => {
+        const product = existingProducts.find((p) => p.id === item.productId);
+        const costPriceAtSale = product ? (product.costPrice ?? 0) : 0;
+        return {
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          costPriceAtSale,
+        };
+      })
+    : (() => {
+        const product = existingProducts.find((p) => p.id === data.productId);
+        const costPriceAtSale = product ? (product.costPrice ?? 0) : 0;
+        return [{
+          productId: data.productId,
+          quantity: data.quantity,
+          price: data.price,
+          costPriceAtSale,
+        }];
+      })();
 
-  // Calculate total (round to 2 decimal places to avoid floating point errors)
-  const totalAmount = Math.round(calculateOrderTotal(data.quantity, data.price) * 100) / 100;
+  const totalAmount = Math.round(
+    lineItems.reduce((sum, item) => sum + calculateOrderTotal(item.quantity, item.price), 0) * 100
+  ) / 100;
+  const totalQuantity = lineItems.reduce((sum, item) => sum + item.quantity, 0);
   const amountPaid = Math.round((data.amountPaid || 0) * 100) / 100;
   const outstandingAmount = Math.round((totalAmount - amountPaid) * 100) / 100;
 
   // Get next order number
   const orderNumber = await getNextOrderNumber();
-  
-  // Create order
+
   const now = new Date().toISOString();
   const newOrder = {
     id: generateOrderId(),
-    orderNumber: orderNumber, // Integer order number
+    orderNumber,
     customerId: data.customerId,
-    productId: data.productId,
-    quantity: data.quantity,
-    price: data.price,
-    costPriceAtSale,
+    ...(useItems
+      ? { items: lineItems }
+      : {
+          productId: lineItems[0].productId,
+          quantity: lineItems[0].quantity,
+          price: lineItems[0].price,
+          costPriceAtSale: lineItems[0].costPriceAtSale,
+        }),
     totalAmount,
     amountPaid,
     outstandingAmount,
@@ -201,11 +269,11 @@ export async function createOrder(
     createdBy: createdBy || null,
   };
 
-  // Issue bottles to customer
+  // Issue bottles to customer (total quantity for all items)
   const bottleTransaction = await bottlesService.createTransaction(
     data.customerId,
     'issued',
-    data.quantity,
+    totalQuantity,
     `Order #${newOrder.orderNumber}`,
     createdBy,
     existingBottleTransactions
@@ -335,27 +403,28 @@ export async function markOrderAsShipped(orderId, existingOrders, existingProduc
   if (order.status === 'shipped') {
     return { order, products: existingProducts };
   }
-  const productIndex = existingProducts.findIndex((p) => p.id === order.productId);
-  if (productIndex === -1) {
-    throw new Error('Product not found for order');
+  const lineItems = getOrderLineItems(order);
+  let updatedProducts = [...existingProducts];
+  for (const item of lineItems) {
+    const productIndex = updatedProducts.findIndex((p) => p.id === item.productId);
+    if (productIndex === -1) {
+      throw new Error(`Product not found for order: ${item.productId}`);
+    }
+    const product = updatedProducts[productIndex];
+    const trackStock = product.trackStock !== false;
+    const qty = item.quantity || 0;
+    if (trackStock && qty > 0) {
+      const currentStock = (product.currentStock ?? 0) - qty;
+      const readyToShip = Math.max(0, (product.readyToShip ?? 0) - qty);
+      updatedProducts[productIndex] = {
+        ...product,
+        currentStock: Math.max(0, currentStock),
+        readyToShip,
+        updatedAt: new Date().toISOString(),
+      };
+    }
   }
-  const product = existingProducts[productIndex];
-  const trackStock = product.trackStock !== false;
-  const qty = order.quantity || 0;
-  let updatedProducts = existingProducts;
-  if (trackStock && qty > 0) {
-    const currentStock = (product.currentStock ?? 0) - qty;
-    const readyToShip = Math.max(0, (product.readyToShip ?? 0) - qty);
-    const updatedProduct = {
-      ...product,
-      currentStock: Math.max(0, currentStock),
-      readyToShip,
-      updatedAt: new Date().toISOString(),
-    };
-    updatedProducts = [...existingProducts];
-    updatedProducts[productIndex] = updatedProduct;
-    await storageService.setItem('products_data', updatedProducts);
-  }
+  await storageService.setItem('products_data', updatedProducts);
   const updatedOrder = { ...order, status: 'shipped', updatedAt: new Date().toISOString() };
   const updatedOrders = [...existingOrders];
   updatedOrders[orderIndex] = updatedOrder;

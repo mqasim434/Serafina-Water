@@ -6,6 +6,7 @@
  */
 
 import { storageService } from '../../shared/services/storage.js';
+import { getOrderLineItems } from '../orders/service.js';
 
 const STORAGE_KEY = 'bottles_transactions';
 
@@ -128,15 +129,17 @@ export function calculateOutstanding(customerId, transactions) {
  * @returns {number} Outstanding bottles from returnable products only
  */
 export function calculateOutstandingReturnable(customerId, transactions, orders, products) {
-  // Get all orders for this customer with returnable products
-  const customerReturnableOrders = orders.filter((order) => {
-    if (order.customerId !== customerId) return false;
-    const product = products.find((p) => p.id === order.productId);
-    return product && product.isReturnable !== false; // Default to true if not set
-  });
-
-  // Calculate total bottles issued from returnable products (from orders)
-  const totalIssuedReturnable = customerReturnableOrders.reduce((sum, order) => sum + order.quantity, 0);
+  // Get total bottles issued from returnable products (from orders) for this customer
+  const totalIssuedReturnable = orders
+    .filter((order) => order.customerId === customerId)
+    .reduce((sum, order) => {
+      const lineItems = getOrderLineItems(order);
+      return sum + lineItems.reduce((lineSum, item) => {
+        const product = products.find((p) => p.id === item.productId);
+        if (!product || product.isReturnable === false) return lineSum;
+        return lineSum + (item.quantity || 0);
+      }, 0);
+    }, 0);
 
   // Get all transactions for this customer
   const customerTransactions = transactions.filter((t) => t.customerId === customerId);

@@ -217,10 +217,10 @@ export function QuickOrderPage() {
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('selectCustomer')}</h2>
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {customers.length === 0 ? (
+              {customersService.getActiveCustomers(customers).length === 0 ? (
                 <p className="text-gray-500 text-center py-8">{t('noCustomers')}</p>
               ) : (
-                customers.map((customer) => (
+                customersService.getActiveCustomers(customers).map((customer) => (
                   <button
                     key={customer.id}
                     onClick={() => handleCustomerSelect(customer.id)}

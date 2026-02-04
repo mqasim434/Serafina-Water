@@ -13,17 +13,19 @@ import { productsService } from '../../../features/products/slice.js';
  * @typedef {Object} CustomerDetailsProps
  * @property {import('../types.js').Customer} customer - Customer to display
  * @property {function(): void} onEdit - Handler for edit button
- * @property {function(): void} onDelete - Handler for delete button
+ * @property {function(): void} onDeactivate - Handler for deactivate button (when customer is active)
+ * @property {function(): void} onActivate - Handler for activate button (when customer is inactive)
  */
 
 /**
  * Customer Details component
  * @param {CustomerDetailsProps} props
  */
-export function CustomerDetails({ customer, onEdit, onDelete }) {
+export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) {
   const { t } = useTranslation();
   const { items: products } = useSelector((state) => state.products);
   const activeProducts = productsService.getActiveProducts(products);
+  const isActive = customer?.isActive !== false;
 
   if (!customer) {
     return (
@@ -45,14 +47,28 @@ export function CustomerDetails({ customer, onEdit, onDelete }) {
             >
               {t('edit')}
             </button>
-            <button
-              onClick={onDelete}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              {t('delete')}
-            </button>
+            {isActive ? (
+              <button
+                onClick={onDeactivate}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
+              >
+                {t('deactivate')}
+              </button>
+            ) : (
+              <button
+                onClick={onActivate}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                {t('activate')}
+              </button>
+            )}
           </div>
         </div>
+        {!isActive && (
+          <p className="mt-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            {t('deactivatedCustomerNote')}
+          </p>
+        )}
       </div>
 
       <div className="p-6 space-y-4">

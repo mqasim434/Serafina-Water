@@ -8,6 +8,7 @@
 import * as cashService from '../cash/service.js';
 import { bottlesService } from '../bottles/slice.js';
 import { paymentsService } from '../payments/slice.js';
+import { getOrderLineItems, getOrderTotalQuantity } from '../orders/service.js';
 
 /** Period filter keys */
 export const PERIOD_DAILY = 'daily';
@@ -107,31 +108,34 @@ export function generateProfitRevenueReport(orders, products, startDate, endDate
   const byProduct = new Map();
 
   filtered.forEach((order) => {
-    const revenue = order.quantity * (order.price || 0);
-    const costPerUnit = order.costPriceAtSale ?? 0;
-    const cost = order.quantity * costPerUnit;
-    const profit = revenue - cost;
-    totalRevenue += revenue;
-    totalCost += cost;
+    const lineItems = getOrderLineItems(order);
+    lineItems.forEach((item) => {
+      const revenue = item.quantity * (item.price || 0);
+      const costPerUnit = item.costPriceAtSale ?? 0;
+      const cost = item.quantity * costPerUnit;
+      const profit = revenue - cost;
+      totalRevenue += revenue;
+      totalCost += cost;
 
-    const product = products.find((p) => p.id === order.productId);
-    const productName = product ? `${product.name} (${product.size})` : order.productId || 'Unknown';
-    const key = order.productId || 'unknown';
-    if (!byProduct.has(key)) {
-      byProduct.set(key, {
-        productId: order.productId,
-        productName,
-        quantitySold: 0,
-        revenue: 0,
-        cost: 0,
-        profit: 0,
-      });
-    }
-    const row = byProduct.get(key);
-    row.quantitySold += order.quantity;
-    row.revenue += revenue;
-    row.cost += cost;
-    row.profit += profit;
+      const product = products.find((p) => p.id === item.productId);
+      const productName = product ? `${product.name} (${product.size})` : item.productId || 'Unknown';
+      const key = item.productId || 'unknown';
+      if (!byProduct.has(key)) {
+        byProduct.set(key, {
+          productId: item.productId,
+          productName,
+          quantitySold: 0,
+          revenue: 0,
+          cost: 0,
+          profit: 0,
+        });
+      }
+      const row = byProduct.get(key);
+      row.quantitySold += item.quantity;
+      row.revenue += revenue;
+      row.cost += cost;
+      row.profit += profit;
+    });
   });
 
   const totalProfit = totalRevenue - totalCost;
@@ -149,8 +153,10 @@ export function generateProfitRevenueReport(orders, products, startDate, endDate
     let lyRevenue = 0;
     let lyCost = 0;
     lyFiltered.forEach((o) => {
-      lyRevenue += o.quantity * (o.price || 0);
-      lyCost += o.quantity * (o.costPriceAtSale ?? 0);
+      getOrderLineItems(o).forEach((item) => {
+        lyRevenue += item.quantity * (item.price || 0);
+        lyCost += item.quantity * (item.costPriceAtSale ?? 0);
+      });
     });
     const lyProfit = lyRevenue - lyCost;
     const lyMargin = lyRevenue > 0 ? Math.round((lyProfit / lyRevenue) * 10000) / 100 : 0;
@@ -514,7 +520,7 @@ function calculateAverageOrderQuantity(customerOrders) {
     return 0;
   }
   
-  const totalQuantity = customerOrders.reduce((sum, order) => sum + order.quantity, 0);
+  const totalQuantity = customerOrders.reduce((sum, order) => sum + getOrderTotalQuantity(order), 0);
   const average = totalQuantity / customerOrders.length;
   return Math.round(average * 100) / 100;
 }
@@ -530,17 +536,22 @@ function findMostFrequentProduct(customerOrders, products) {
     return 'N/A';
   }
   
-  // Count occurrences of each productId
+  // Count occurrences of each productId (from all line items)
   const productCounts = {};
   customerOrders.forEach((order) => {
-    productCounts[order.productId] = (productCounts[order.productId] || 0) + 1;
+    getOrderLineItems(order).forEach((item) => {
+      productCounts[item.productId] = (productCounts[item.productId] || 0) + 1;
+    });
   });
-  
+
+  const keys = Object.keys(productCounts);
+  if (keys.length === 0) return 'N/A';
+
   // Find the productId with the highest count
-  const mostFrequentProductId = Object.keys(productCounts).reduce((a, b) =>
+  const mostFrequentProductId = keys.reduce((a, b) =>
     productCounts[a] > productCounts[b] ? a : b
   );
-  
+
   // Find product name
   const product = products.find((p) => p.id === mostFrequentProductId);
   return product ? product.name : 'N/A';

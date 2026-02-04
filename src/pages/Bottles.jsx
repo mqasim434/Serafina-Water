@@ -387,7 +387,7 @@ export function Bottles() {
 
             <div className="mb-4">
               <CustomerSearch
-                customers={customers}
+                customers={customersService.getActiveCustomers(customers)}
                 value={selectedCustomerId}
                 onChange={setSelectedCustomerId}
                 required={true}
@@ -444,13 +444,21 @@ export function Bottles() {
                     .slice(0, 25)
                     .map((order) => {
                       const customer = customers.find((c) => c.id === order.customerId);
-                      const product = products.find((p) => p.id === order.productId);
+                      const lineItems = ordersService.getOrderLineItems(order);
+                      const totalQty = ordersService.getOrderTotalQuantity(order);
+                      const productSummary = lineItems
+                        .map((item) => {
+                          const p = products.find((pr) => pr.id === item.productId);
+                          return p ? `${p.name} (${p.size}) × ${item.quantity}` : null;
+                        })
+                        .filter(Boolean)
+                        .join(', ') || '-';
                       return (
                         <tr key={order.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 font-medium">{order.orderNumber ?? order.id}</td>
                           <td className="px-4 py-2">{customer?.name ?? order.customerId}</td>
-                          <td className="px-4 py-2">{product ? `${product.name} (${product.size})` : '-'}</td>
-                          <td className="px-4 py-2">{order.quantity}</td>
+                          <td className="px-4 py-2">{productSummary}</td>
+                          <td className="px-4 py-2">{totalQty}</td>
                           <td className="px-4 py-2">
                             <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                               order.status === 'shipped' ? 'bg-green-100 text-green-800' : order.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
@@ -490,7 +498,7 @@ export function Bottles() {
 
               <div className="mb-4">
                 <CustomerSearch
-                  customers={customers}
+                  customers={customersService.getActiveCustomers(customers)}
                   value={selectedCustomerId}
                   onChange={setSelectedCustomerId}
                   required={true}

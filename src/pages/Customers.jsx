@@ -14,7 +14,6 @@ import {
   setCustomers,
   addCustomer,
   updateCustomerInState,
-  removeCustomer,
   setError,
   setSelectedId,
 } from '../features/customers/slice.js';
@@ -97,19 +96,28 @@ export function Customers() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeactivate = async () => {
     if (!selectedId) return;
-
-    if (!window.confirm('Are you sure you want to delete this customer?')) {
+    if (!window.confirm('Deactivate this customer? They will not be able to place orders, return bottles, or make payments.')) {
       return;
     }
-
     dispatch(setLoading(true));
     try {
-      await customersService.deleteCustomer(selectedId, customers);
-      dispatch(removeCustomer(selectedId));
-      setViewMode(VIEW_MODES.LIST);
-      dispatch(setSelectedId(null));
+      const updated = await customersService.deactivateCustomer(selectedId, customers);
+      dispatch(updateCustomerInState(updated));
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const handleActivate = async () => {
+    if (!selectedId) return;
+    dispatch(setLoading(true));
+    try {
+      const updated = await customersService.activateCustomer(selectedId, customers);
+      dispatch(updateCustomerInState(updated));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -208,7 +216,8 @@ export function Customers() {
             <CustomerDetails
               customer={selectedCustomer}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDeactivate={handleDeactivate}
+              onActivate={handleActivate}
             />
           )}
           {(viewMode === VIEW_MODES.ADD || viewMode === VIEW_MODES.EDIT) && (

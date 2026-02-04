@@ -68,9 +68,18 @@ export function CustomerList({ customers, onSelect, onAdd }) {
                   <p className="text-sm text-gray-500 mt-1">{customer.phone}</p>
                   <p className="text-sm text-gray-500 mt-1">{customer.address}</p>
                 </div>
-                <div className="ml-4">
+                <div className="ml-4 flex items-center gap-1.5">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {customer.preferredLanguage === 'en' ? 'EN' : 'UR'}
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      customer.isActive !== false
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {customer.isActive !== false ? t('active') : t('inactive')}
                   </span>
                 </div>
               </div>
