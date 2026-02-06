@@ -14,21 +14,12 @@ import {
 } from '../features/settings/slice.js';
 import { settingsService } from '../features/settings/slice.js';
 import { setLanguage } from '../features/i18n/slice.js';
-import { CategoryManager } from '../features/expenses/components/CategoryManager.jsx';
-import { expensesService } from '../features/expenses/slice.js';
-import {
-  setCategories,
-  addCategory,
-  updateCategoryInState,
-  removeCategory,
-} from '../features/expenses/slice.js';
 import { waterQualityService } from '../features/waterQuality/slice.js';
 import { setRanges } from '../features/waterQuality/slice.js';
 
 const SETTINGS_SECTIONS = {
   COMPANY: 'company',
   LANGUAGE: 'language',
-  CATEGORIES: 'categories',
   WATER_QUALITY: 'water_quality',
 };
 
@@ -36,8 +27,6 @@ export function Settings() {
   const dispatch = useDispatch();
   const { t } = useTranslation();
   const { settings, isLoading, error } = useSelector((state) => state.settings);
-  const { categories } = useSelector((state) => state.expenses);
-  const { items: expenses } = useSelector((state) => state.expenses);
   const { ranges: waterQualityRanges } = useSelector((state) => state.waterQuality);
 
   const [activeSection, setActiveSection] = useState(SETTINGS_SECTIONS.COMPANY);
@@ -134,47 +123,6 @@ export function Settings() {
     }
   };
 
-  const handleCreateCategory = async (name, description) => {
-    dispatch(setLoading(true));
-    try {
-      const newCategory = await expensesService.createCategory(name, description, categories);
-      dispatch(addCategory(newCategory));
-    } catch (err) {
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-
-  const handleUpdateCategory = async (categoryId, name, description) => {
-    dispatch(setLoading(true));
-    try {
-      const updated = await expensesService.updateCategory(
-        categoryId,
-        name,
-        description,
-        categories
-      );
-      dispatch(updateCategoryInState(updated));
-    } catch (err) {
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId) => {
-    dispatch(setLoading(true));
-    try {
-      await expensesService.deleteCategory(categoryId, categories, expenses);
-      dispatch(removeCategory(categoryId));
-    } catch (err) {
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-
   const handleWaterQualitySubmit = async (e) => {
     e.preventDefault();
     dispatch(setLoading(true));
@@ -242,16 +190,6 @@ export function Settings() {
                 }`}
               >
                 {t('language')}
-              </button>
-              <button
-                onClick={() => setActiveSection(SETTINGS_SECTIONS.CATEGORIES)}
-                className={`w-full text-left px-4 py-2 rounded-md ${
-                  activeSection === SETTINGS_SECTIONS.CATEGORIES
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                {t('categories')}
               </button>
               <button
                 onClick={() => setActiveSection(SETTINGS_SECTIONS.WATER_QUALITY)}
@@ -378,14 +316,6 @@ export function Settings() {
                 </select>
               </div>
             </div>
-          )}
-
-          {activeSection === SETTINGS_SECTIONS.CATEGORIES && (
-            <CategoryManager
-              onCreate={handleCreateCategory}
-              onUpdate={handleUpdateCategory}
-              onDelete={handleDeleteCategory}
-            />
           )}
 
           {activeSection === SETTINGS_SECTIONS.WATER_QUALITY && (

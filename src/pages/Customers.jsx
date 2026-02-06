@@ -20,6 +20,12 @@ import {
 import { customersService } from '../features/customers/slice.js';
 import { productsService } from '../features/products/slice.js';
 import { setProducts } from '../features/products/slice.js';
+import { setOrders } from '../features/orders/slice.js';
+import { setPayments } from '../features/payments/slice.js';
+import { setTransactions } from '../features/bottles/slice.js';
+import { ordersService } from '../features/orders/slice.js';
+import { paymentsService } from '../features/payments/slice.js';
+import { bottlesService } from '../features/bottles/slice.js';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 
 const VIEW_MODES = {
@@ -40,30 +46,25 @@ export function Customers() {
   const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  // Load customers and products on mount - always load to ensure fresh data
+  // Load customers, products, orders, payments, bottle transactions on mount
   useEffect(() => {
     async function loadData() {
-      // Only show loading if we don't have data yet
       if (customers.length === 0 || products.length === 0) {
         dispatch(setLoading(true));
       }
       try {
-        const loadPromises = [customersService.loadCustomers()];
-        
-        // Load products if not already loaded
-        if (products.length === 0) {
-          loadPromises.push(productsService.loadProducts());
-        } else {
-          loadPromises.push(Promise.resolve(null));
-        }
-        
-        const [loadedCustomers, loadedProducts] = await Promise.all(loadPromises);
-        
+        const [loadedCustomers, loadedProducts, loadedOrders, loadedPayments, loadedTransactions] = await Promise.all([
+          customersService.loadCustomers(),
+          products.length === 0 ? productsService.loadProducts() : Promise.resolve(null),
+          ordersService.loadOrders(),
+          paymentsService.loadPayments(),
+          bottlesService.loadTransactions(),
+        ]);
         dispatch(setCustomers(loadedCustomers));
-        
-        if (loadedProducts !== null) {
-          dispatch(setProducts(loadedProducts));
-        }
+        if (loadedProducts) dispatch(setProducts(loadedProducts));
+        dispatch(setOrders(loadedOrders));
+        dispatch(setPayments(loadedPayments));
+        dispatch(setTransactions(loadedTransactions));
       } catch (err) {
         dispatch(setError(err.message));
       } finally {

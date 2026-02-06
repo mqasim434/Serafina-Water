@@ -428,29 +428,50 @@ export function getDeliveryStatus(order) {
 /**
  * Get orders that are pending (not yet marked ready for delivery)
  * @param {import('./types.js').Order[]} orders - All orders
- * @param {string} [deliveryDate] - YYYY-MM-DD; if omitted uses today
+ * @param {string | null} [deliveryDate] - YYYY-MM-DD; if null/undefined, returns ALL pending (no date filter)
  * @returns {import('./types.js').Order[]}
  */
 export function getOrdersPendingDelivery(orders, deliveryDate) {
-  const date = deliveryDate || toLocalDateString(new Date());
   return orders.filter((o) => {
-    if (getOrderDeliveryDate(o) !== date) return false;
-    return getDeliveryStatus(o) === 'pending';
+    if (getDeliveryStatus(o) !== 'pending') return false;
+    if (deliveryDate != null && deliveryDate !== '') {
+      if (getOrderDeliveryDate(o) !== deliveryDate) return false;
+    }
+    return true;
   }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 }
 
 /**
  * Get orders that are ready for driver (marked ready, not yet delivered)
  * @param {import('./types.js').Order[]} orders - All orders
- * @param {string} [deliveryDate] - YYYY-MM-DD; if omitted uses today
+ * @param {string | null} [deliveryDate] - YYYY-MM-DD; if null/undefined, returns ALL ready (no date filter)
  * @returns {import('./types.js').Order[]}
  */
 export function getOrdersReadyForDelivery(orders, deliveryDate) {
-  const date = deliveryDate || toLocalDateString(new Date());
   return orders.filter((o) => {
-    if (getOrderDeliveryDate(o) !== date) return false;
-    return getDeliveryStatus(o) === 'ready';
+    if (getDeliveryStatus(o) !== 'ready') return false;
+    if (deliveryDate != null && deliveryDate !== '') {
+      if (getOrderDeliveryDate(o) !== deliveryDate) return false;
+    }
+    return true;
   }).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+}
+
+/**
+ * Get orders that have been delivered (for delivered tab)
+ * @param {import('./types.js').Order[]} orders - All orders
+ * @param {string | null} [deliveryDate] - YYYY-MM-DD to filter by date; null = show all
+ * @returns {import('./types.js').Order[]}
+ */
+export function getOrdersDelivered(orders, deliveryDate) {
+  return orders.filter((o) => {
+    if (getDeliveryStatus(o) !== 'delivered') return false;
+    if (deliveryDate == null || deliveryDate === '') return true;
+    const deliveredDate = o.deliveredAt
+      ? toLocalDateString(new Date(o.deliveredAt))
+      : getOrderDeliveryDate(o);
+    return deliveredDate === deliveryDate;
+  }).sort((a, b) => new Date(b.deliveredAt || b.createdAt) - new Date(a.deliveredAt || a.createdAt));
 }
 
 /**

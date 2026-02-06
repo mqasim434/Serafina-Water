@@ -20,7 +20,7 @@ import { expensesService } from '../features/expenses/slice.js';
 import * as cashService from '../features/cash/service.js';
 import { setCashBalance } from '../features/orders/slice.js';
 
-const TABS = {
+const VIEW_MODES = {
   LIST: 'list',
   ADD: 'add',
 };
@@ -34,7 +34,7 @@ export function Expenses() {
   const { cashBalance } = useSelector((state) => state.orders);
   const { user } = useSelector((state) => state.auth);
 
-  const [activeTab, setActiveTab] = useState(TABS.LIST);
+  const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
   const [availableCash, setAvailableCash] = useState(0);
 
   // Load expenses and categories on mount
@@ -59,7 +59,7 @@ export function Expenses() {
   }, [dispatch]);
 
   const handleAddExpense = () => {
-    setActiveTab(TABS.ADD);
+    setViewMode(VIEW_MODES.ADD);
   };
 
   const handleFormSubmit = async (title, description, amount, date) => {
@@ -82,7 +82,7 @@ export function Expenses() {
       dispatch(addExpense(result.expense));
       setAvailableCash(result.newCashBalance);
       dispatch(setCashBalance({ amount: result.newCashBalance, lastUpdated: new Date().toISOString() }));
-      setActiveTab(TABS.LIST);
+      setViewMode(VIEW_MODES.LIST);
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -125,6 +125,13 @@ export function Expenses() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('expenseManagement')}</h1>
+        <button
+          type="button"
+          onClick={handleAddExpense}
+          className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          {t('addExpense')}
+        </button>
       </div>
 
       {error && (
@@ -133,48 +140,19 @@ export function Expenses() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab(TABS.LIST)}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === TABS.LIST
-                ? 'border-red-500 text-red-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {t('expenseHistory') || 'Expense History'}
-          </button>
-          <button
-            onClick={() => setActiveTab(TABS.ADD)}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === TABS.ADD
-                ? 'border-red-500 text-red-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {t('addExpense')}
-          </button>
-        </nav>
-      </div>
+      {viewMode === VIEW_MODES.LIST && <ExpenseList onDelete={handleDeleteExpense} />}
 
-      {/* Tab Content */}
-      <div>
-        {activeTab === TABS.LIST && <ExpenseList onDelete={handleDeleteExpense} />}
-
-        {activeTab === TABS.ADD && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('newExpense')}</h2>
-            <ExpenseForm
-              onSubmit={handleFormSubmit}
-              onCancel={() => setActiveTab(TABS.LIST)}
-              isLoading={isLoading}
-              availableCash={availableCash}
-            />
-          </div>
-        )}
-      </div>
+      {viewMode === VIEW_MODES.ADD && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('newExpense')}</h2>
+          <ExpenseForm
+            onSubmit={handleFormSubmit}
+            onCancel={() => setViewMode(VIEW_MODES.LIST)}
+            isLoading={isLoading}
+            availableCash={availableCash}
+          />
+        </div>
+      )}
     </div>
   );
 }
