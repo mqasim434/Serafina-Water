@@ -120,6 +120,9 @@ export function Dashboard() {
   );
   const latestEntry = waterQualityService.getLatestEntry(waterQualityEntries);
 
+  // Low stock alerts
+  const lowStockProducts = productsService.getLowStockProducts(products);
+
   return (
     <div className="space-y-6">
       <div>
@@ -236,6 +239,28 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* Low Stock Alerts */}
+      {lowStockProducts.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-amber-900 mb-4 flex items-center gap-2">
+            <span aria-hidden="true">⚠</span>
+            {t('lowStockAlerts')}
+          </h2>
+          <div className="space-y-2">
+            {lowStockProducts.map((product) => (
+              <div
+                key={product.id}
+                className="flex items-center justify-between bg-amber-100/80 rounded-lg px-4 py-2"
+              >
+                <span className="font-medium text-amber-900">
+                  {product.name} ({product.size}) — {t('currentStock')}: {product.currentStock ?? 0} / {t('lowStockThreshold')}: {product.lowStockThreshold ?? 0}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Water Quality Alerts */}
       {(criticalEntries.length > 0 || warningEntries.length > 0) && (
         <div className="bg-white rounded-lg shadow p-6">
@@ -297,17 +322,30 @@ export function Dashboard() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {products
                   .filter((p) => p.isActive && p.trackStock !== false)
-                  .map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 font-medium text-gray-900">
-                        {product.name} ({product.size})
-                      </td>
-                      <td className="px-4 py-2 text-gray-600">{product.currentStock ?? 0}</td>
-                      <td className="px-4 py-2 text-gray-600">
-                        {(product.readyToShip ?? 0) > 0 ? product.readyToShip : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  .map((product) => {
+                    const isLowStock = (product.currentStock ?? 0) < (product.lowStockThreshold ?? 0);
+                    return (
+                      <tr
+                        key={product.id}
+                        className={`hover:bg-gray-50 ${isLowStock ? 'bg-amber-50' : ''}`}
+                      >
+                        <td className="px-4 py-2 font-medium text-gray-900">
+                          {product.name} ({product.size})
+                          {isLowStock && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-200 text-amber-900">
+                              {t('lowStockAlert')}
+                            </span>
+                          )}
+                        </td>
+                        <td className={`px-4 py-2 ${isLowStock ? 'text-amber-800 font-semibold' : 'text-gray-600'}`}>
+                          {product.currentStock ?? 0}
+                        </td>
+                        <td className="px-4 py-2 text-gray-600">
+                          {(product.readyToShip ?? 0) > 0 ? product.readyToShip : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>

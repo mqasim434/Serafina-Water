@@ -45,6 +45,8 @@ export function Stock() {
     (p) => p.isActive && p.trackStock !== false
   );
 
+  const lowStockProducts = productsService.getLowStockProducts(products);
+
   const handleReadyToShipChange = (productId, value) => {
     setEditingRts((prev) => ({ ...prev, [productId]: value }));
   };
@@ -97,6 +99,25 @@ export function Stock() {
         </div>
       )}
 
+      {lowStockProducts.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <h2 className="text-base font-semibold text-amber-900 mb-3 flex items-center gap-2">
+            <span aria-hidden="true">⚠</span>
+            {t('lowStockAlerts')}
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {lowStockProducts.map((product) => (
+              <span
+                key={product.id}
+                className="inline-flex items-center bg-amber-100 text-amber-900 px-3 py-1.5 rounded text-sm font-medium"
+              >
+                {product.name} ({product.size}) — {t('currentStock')}: {product.currentStock ?? 0} / {t('lowStockThreshold')}: {product.lowStockThreshold ?? 0}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {trackedProducts.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
@@ -126,12 +147,21 @@ export function Stock() {
                 const editVal = editingRts[product.id];
                 const displayRts = editVal !== undefined ? editVal : currentRts;
                 const isSaving = savingId === product.id;
+                const isLowStock = (product.currentStock ?? 0) < (product.lowStockThreshold ?? 0);
                 return (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr
+                    key={product.id}
+                    className={`hover:bg-gray-50 ${isLowStock ? 'bg-amber-50' : ''}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {product.name} ({product.size})
+                      {isLowStock && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-200 text-amber-900">
+                          {t('lowStockAlert')}
+                        </span>
+                      )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm ${isLowStock ? 'text-amber-800 font-semibold' : 'text-gray-500'}`}>
                       {product.currentStock ?? 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
