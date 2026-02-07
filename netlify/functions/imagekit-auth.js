@@ -42,7 +42,7 @@ exports.handler = async function (event) {
 
   const q = event.queryStringParameters || {};
   const token = q.token || uuidV4();
-  const expire = Number(q.expire) || Math.floor(Date.now() / 1000) + 3600;
+  const expire = Number(q.expire) || Math.floor(Date.now() / 1000) + 1800;
   const message = token + expire;
   const signature = crypto.createHmac('sha1', privateKey).update(message).digest('hex');
 

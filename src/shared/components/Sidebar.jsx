@@ -18,7 +18,8 @@ function getMenuItems(isAdminUser) {
   const items = [
     { path: '/', label: 'dashboard' },
     { path: '/customers', label: 'customers' },
-    { path: '/bottles', label: 'bottles' },
+    { path: '/place-orders', label: 'placeOrders' },
+    { path: '/return-bottles', label: 'returnBottles' },
     { path: '/deliveries', label: 'deliveries' },
     { path: '/stock', label: 'stock' },
     { path: '/payments', label: 'payments' },

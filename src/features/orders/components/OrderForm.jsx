@@ -4,10 +4,15 @@
  * Form for placing orders with multiple line items and payment handling
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
 import { productsService } from '../../products/slice.js';
+
+/** Check if product name contains "dispenser" (case-insensitive) */
+function isDispenserProduct(product) {
+  return (product?.name || '').toLowerCase().includes('dispenser');
+}
 
 /**
  * Order Form props
@@ -37,9 +42,16 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
   const activeProducts = productsService.getActiveProducts(products);
   const customer = customers.find((c) => c.id === customerId);
 
+  // Filter out dispenser products if customer already has dispenser
+  const orderableProducts = useMemo(() => {
+    if (!customer?.hasDispenser) return activeProducts;
+    return activeProducts.filter((p) => !isDispenserProduct(p));
+  }, [activeProducts, customer?.hasDispenser]);
+
   const [items, setItems] = useState([defaultLineItem()]);
   const [amountPaid, setAmountPaid] = useState('');
   const [notes, setNotes] = useState('');
+  const [hasDispenser, setHasDispenser] = useState(!!customer?.hasDispenser);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -61,7 +73,7 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
   const setPriceForProduct = useCallback(
     (productId, itemId) => {
       if (!productId || !customer) return;
-      const product = activeProducts.find((p) => p.id === productId);
+      const product = orderableProducts.find((p) => p.id === productId);
       if (!product) return;
       const customerPrice = customer.productPrices?.[product.id];
       const price = customerPrice ?? product.price ?? 0;
@@ -69,8 +81,13 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
         prev.map((it) => (it.id === itemId ? { ...it, price: price.toString() } : it))
       );
     },
-    [customer, activeProducts]
+    [customer, orderableProducts]
   );
+
+  // Sync hasDispenser when customer changes
+  useEffect(() => {
+    setHasDispenser(!!customer?.hasDispenser);
+  }, [customer?.id, customer?.hasDispenser]);
 
   const handleItemChange = (itemId, field, value) => {
     setItems((prev) =>
@@ -112,8 +129,8 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
         newErrors[`item_${item.id}`] = t('quantity') + ' ' + (t('required') || 'must be > 0');
         return;
       }
-      if (!item.price || pr <= 0) {
-        newErrors[`item_${item.id}`] = t('price') + ' ' + (t('required') || 'must be > 0');
+      if (item.price === '' || item.price === undefined || isNaN(pr) || pr < 0) {
+        newErrors[`item_${item.id}`] = t('price') + ' ' + (t('required') || 'is required');
         return;
       }
       validItems.push({
@@ -145,6 +162,7 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
       items: validItems,
       amountPaid: parseFloat(amountPaid) || 0,
       notes: notes.trim(),
+      hasDispenser,
     });
   };
 
@@ -202,7 +220,7 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
                   }`}
                 >
                   <option value="">{t('selectProduct')}</option>
-                  {activeProducts.map((product) => (
+                  {orderableProducts.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} ({product.size}) — Rs. {(product.price || 0).toLocaleString()}
                     </option>
@@ -254,6 +272,21 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
             <span className="text-sm font-medium text-gray-700">{t('totalAmount')}:</span>
             <span className="text-sm font-bold text-gray-900">Rs. {totalAmount.toLocaleString()}</span>
           </div>
+        </div>
+      )}
+
+      {activeProducts.some(isDispenserProduct) && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="hasDispenser"
+            checked={hasDispenser}
+            onChange={(e) => setHasDispenser(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="hasDispenser" className="text-sm font-medium text-gray-700">
+            {t('hasDispenser') || 'Has Dispenser'}
+          </label>
         </div>
       )}
 

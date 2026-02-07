@@ -28,7 +28,7 @@ function imageKitAuthPlugin() {
         }
         const url = new URL(req.url || '', 'http://localhost')
         const token = url.searchParams.get('token') || uuidV4()
-        const expire = Number(url.searchParams.get('expire')) || Math.floor(Date.now() / 1000) + 3600
+        const expire = Number(url.searchParams.get('expire')) || Math.floor(Date.now() / 1000) + 1800
         const signature = crypto.createHmac('sha1', privateKey).update(String(token) + expire).digest('hex')
         res.statusCode = 200
         res.setHeader('Content-Type', 'application/json')

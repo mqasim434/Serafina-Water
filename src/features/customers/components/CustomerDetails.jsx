@@ -29,6 +29,7 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
   const { transactions } = useSelector((state) => state.bottles);
 
   const [detailsOpen, setDetailsOpen] = useState(true);
+  const [balanceOpen, setBalanceOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [paymentsOpen, setPaymentsOpen] = useState(false);
 
@@ -60,6 +61,10 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
   const allTransactions = bottlesService.getCustomerTransactions(customer.id, transactions || [])
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const allPayments = paymentsService.getPaymentHistory(customer.id, payments || []);
+
+  const { items: customers } = useSelector((state) => state.customers);
+  const customerBalance = paymentsService.calculateCustomerBalance(customer.id, orders || [], payments || [], customers || []);
+  const pendingBottles = bottlesService.calculateOutstandingReturnable(customer.id, transactions || [], orders || [], products || []);
 
   const handleDownloadReport = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -297,6 +302,10 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                   {customer.preferredLanguage === 'ur' ? 'Urdu' : 'English'}
                 </p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-500">{t('hasDispenser') || 'Has Dispenser'}</label>
+                <p className="mt-1 text-sm text-gray-900">{customer.hasDispenser ? t('yes') || 'Yes' : t('no') || 'No'}</p>
+              </div>
               {customer.createdAt && (
                 <div>
                   <label className="block text-sm font-medium text-gray-500">{t('created')}</label>
@@ -357,7 +366,27 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
         </div>
       </CollapsibleSection>
 
-      {/* Section 2: Orders - collapsible */}
+      {/* Section 2: Balance - collapsible */}
+      <CollapsibleSection
+        title={t('balance')}
+        open={balanceOpen}
+        onToggle={() => setBalanceOpen(!balanceOpen)}
+      >
+        <div className="p-4 bg-white">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-amber-700">{t('pendingAmount') || 'Pending Amount'}</p>
+              <p className="text-xl font-bold text-amber-900">Rs. {(customerBalance.balance ?? 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-blue-700">{t('pendingBottlesToReturn') || 'Pending Bottles (to be returned)'}</p>
+              <p className="text-xl font-bold text-blue-900">{pendingBottles}</p>
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Section 3: Orders - collapsible */}
       <CollapsibleSection
         title={t('orders')}
         open={ordersOpen}
@@ -410,7 +439,7 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
         </div>
       </CollapsibleSection>
 
-      {/* Section 3: Payments - collapsible */}
+      {/* Section 4: Payments - collapsible */}
       <CollapsibleSection
         title={t('payments')}
         open={paymentsOpen}

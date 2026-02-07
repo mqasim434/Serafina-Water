@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 import * as reportsService from '../features/reports/service.js';
 import * as cashService from '../features/cash/service.js';
+import { expensesService } from '../features/expenses/slice.js';
 import { CustomerActivity } from '../features/reports/components/CustomerActivity.jsx';
 import { ordersService, setOrders } from '../features/orders/slice.js';
 import { productsService, setProducts } from '../features/products/slice.js';
@@ -510,7 +511,7 @@ export function Reports() {
             <p className="text-sm text-gray-600 mb-4">
               {t('period')}: {periodStart} — {periodEnd}
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-700">{t('totalRevenue')}</p>
                 <p className="text-xl font-bold text-green-900">Rs. {profitReport.totalRevenue.toLocaleString()}</p>
@@ -520,7 +521,7 @@ export function Reports() {
                 <p className="text-xl font-bold text-red-900">Rs. {profitReport.totalCost.toLocaleString()}</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-700">{t('totalProfit')}</p>
+                <p className="text-sm text-blue-700">{t('grossProfit')}</p>
                 <p className="text-xl font-bold text-blue-900">Rs. {profitReport.totalProfit.toLocaleString()}</p>
               </div>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -528,11 +529,29 @@ export function Reports() {
                 <p className="text-xl font-bold text-gray-900">{profitReport.profitMarginPct}%</p>
               </div>
             </div>
+            {(() => {
+              const totalExpenses = expensesService.calculateExpensesInRange(periodStart, periodEnd, expenses || []);
+              const netProfit = profitReport.totalProfit - totalExpenses;
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-sm text-amber-700">{t('totalExpenses')}</p>
+                    <p className="text-xl font-bold text-amber-900">Rs. {totalExpenses.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <p className="text-sm text-indigo-700">{t('netProfit')}</p>
+                    <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-indigo-900' : 'text-red-700'}`}>
+                      Rs. {netProfit.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
             {profitReport.comparison && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                 <p className="text-sm font-medium text-amber-900">{t('compareWithLastYear')}</p>
                 <p className="text-sm text-amber-800 mt-1">
-                  {t('totalRevenue')}: Rs. {profitReport.comparison.totalRevenue.toLocaleString()} | {t('totalProfit')}: Rs. {profitReport.comparison.totalProfit.toLocaleString()} | {t('profitMargin')}: {profitReport.comparison.profitMarginPct}%
+                  {t('totalRevenue')}: Rs. {profitReport.comparison.totalRevenue.toLocaleString()} | {t('grossProfit')}: Rs. {profitReport.comparison.totalProfit.toLocaleString()} | {t('profitMargin')}: {profitReport.comparison.profitMarginPct}%
                 </p>
               </div>
             )}

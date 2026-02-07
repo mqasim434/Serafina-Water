@@ -35,6 +35,7 @@
  * @property {CustomerProductPrices} productPrices - Product prices per product ID
  * @property {CustomerBottlePrices} [bottlePrices] - Legacy bottle prices (for backward compatibility)
  * @property {boolean} [isActive] - Whether customer can place orders, return bottles, make payments (default true)
+ * @property {boolean} [hasDispenser] - Whether customer has dispenser (free product, hidden from order form when true)
  * @property {string} [createdAt] - Creation timestamp (ISO string)
  * @property {string} [updatedAt] - Last update timestamp (ISO string)
  */

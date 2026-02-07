@@ -167,8 +167,8 @@ export function validateOrder(data) {
     if (!item.quantity || item.quantity <= 0) {
       return { isValid: false, error: `Quantity must be greater than 0 for item ${i + 1}` };
     }
-    if (!item.price || item.price <= 0) {
-      return { isValid: false, error: `Price must be greater than 0 for item ${i + 1}` };
+    if (item.price === undefined || item.price === null || item.price === '' || item.price < 0) {
+      return { isValid: false, error: `Price is required for item ${i + 1}` };
     }
   }
 
@@ -472,6 +472,26 @@ export function getOrdersDelivered(orders, deliveryDate) {
       : getOrderDeliveryDate(o);
     return deliveredDate === deliveryDate;
   }).sort((a, b) => new Date(b.deliveredAt || b.createdAt) - new Date(a.deliveredAt || a.createdAt));
+}
+
+/**
+ * Mark an order as pending (revert from ready)
+ * @param {string} orderId - Order ID
+ * @param {import('./types.js').Order[]} existingOrders - Existing orders
+ * @returns {Promise<import('./types.js').Order>}
+ */
+export async function markOrderPending(orderId, existingOrders) {
+  const i = existingOrders.findIndex((o) => o.id === orderId);
+  if (i === -1) throw new Error('Order not found');
+  const order = existingOrders[i];
+  if (getDeliveryStatus(order) !== 'ready') {
+    throw new Error('Order is not ready (cannot revert to pending)');
+  }
+  const updated = { ...order, status: 'pending', updatedAt: new Date().toISOString() };
+  const next = [...existingOrders];
+  next[i] = updated;
+  await saveOrders(next);
+  return updated;
 }
 
 /**

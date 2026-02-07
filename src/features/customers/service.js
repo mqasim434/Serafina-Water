@@ -90,6 +90,7 @@ export async function createCustomer(data, existingCustomers) {
     preferredLanguage: data.preferredLanguage,
     productPrices: productPrices,
     isActive: true,
+    hasDispenser: !!data.hasDispenser,
     createdAt: now,
     updatedAt: now,
   };
@@ -130,8 +131,8 @@ export async function updateCustomer(id, data, existingCustomers) {
     address: data.address.trim(),
     preferredLanguage: data.preferredLanguage,
     productPrices: productPrices,
+    ...(data.hasDispenser !== undefined && { hasDispenser: !!data.hasDispenser }),
     // Preserve legacy bottlePrices for backward compatibility if they exist
-    // (but don't use them for new updates)
     ...(existingCustomer.bottlePrices && { bottlePrices: existingCustomer.bottlePrices }),
     updatedAt: new Date().toISOString(),
   };
@@ -166,6 +167,29 @@ export async function deactivateCustomer(id, existingCustomers) {
   const updatedCustomer = {
     ...existingCustomers[customerIndex],
     isActive: false,
+    updatedAt: new Date().toISOString(),
+  };
+  const updatedCustomers = [...existingCustomers];
+  updatedCustomers[customerIndex] = updatedCustomer;
+  await saveCustomers(updatedCustomers);
+  return updatedCustomer;
+}
+
+/**
+ * Update customer hasDispenser flag
+ * @param {string} id - Customer ID
+ * @param {boolean} hasDispenser - Whether customer has dispenser
+ * @param {import('./types.js').Customer[]} existingCustomers - Existing customers array
+ * @returns {Promise<import('./types.js').Customer>} Updated customer
+ */
+export async function updateCustomerHasDispenser(id, hasDispenser, existingCustomers) {
+  const customerIndex = existingCustomers.findIndex((c) => c.id === id);
+  if (customerIndex === -1) {
+    throw new Error('Customer not found');
+  }
+  const updatedCustomer = {
+    ...existingCustomers[customerIndex],
+    hasDispenser: !!hasDispenser,
     updatedAt: new Date().toISOString(),
   };
   const updatedCustomers = [...existingCustomers];

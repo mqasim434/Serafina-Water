@@ -13,6 +13,7 @@ import { Dashboard } from './pages/Dashboard.jsx';
 import { Login } from './pages/Login.jsx';
 import { Customers } from './pages/Customers.jsx';
 import { Bottles } from './pages/Bottles.jsx';
+import { ReturnBottles } from './pages/ReturnBottles.jsx';
 import { Products } from './pages/Products.jsx';
 import { Users } from './pages/Users.jsx';
 import { Payments } from './pages/Payments.jsx';
@@ -114,7 +115,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/bottles"
+        path="/place-orders"
         element={
           <ProtectedRoute>
             <Layout>
@@ -122,6 +123,20 @@ function AppRoutes() {
             </Layout>
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/return-bottles"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ReturnBottles />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/bottles"
+        element={<Navigate to="/place-orders" replace />}
       />
       <Route
         path="/payments"

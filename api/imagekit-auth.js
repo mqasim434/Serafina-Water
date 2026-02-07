@@ -35,7 +35,7 @@ module.exports = function handler(req, res) {
   }
 
   const token = req.query.token || uuidV4();
-  const expire = Number(req.query.expire) || Math.floor(Date.now() / 1000) + 3600; // 1 hour
+  const expire = Number(req.query.expire) || Math.floor(Date.now() / 1000) + 1800; // 30 min (ImageKit requires < 1 hour)
   const message = token + expire;
   const signature = crypto.createHmac('sha1', privateKey).update(message).digest('hex');
 

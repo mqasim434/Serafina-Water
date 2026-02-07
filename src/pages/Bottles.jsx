@@ -1,27 +1,23 @@
 /**
- * Bottles Page
- * 
- * Main page with Orders and Returns tabs
+ * Place Orders Page
+ *
+ * Page for placing orders and managing recent orders
  */
 
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { OrderForm } from '../features/orders/components/OrderForm.jsx';
-import { ReturnForm } from '../features/bottles/components/ReturnForm.jsx';
-// import { ReceiptTemplate } from '../features/receipts/components/ReceiptTemplate.jsx'; // TEMPORARILY DISABLED
 import { BottleSummary } from '../features/bottles/components/BottleSummary.jsx';
 import { CustomerBottleBalance } from '../features/bottles/components/CustomerBottleBalance.jsx';
 import { TransactionHistory } from '../features/bottles/components/TransactionHistory.jsx';
-import { CustomersWithOutstandingBottles } from '../features/bottles/components/CustomersWithOutstandingBottles.jsx';
 import { CustomerSearch } from '../features/customers/components/CustomerSearch.jsx';
 import {
   setLoading,
   setTransactions,
-  addTransaction,
   setError,
 } from '../features/bottles/slice.js';
 import { bottlesService } from '../features/bottles/slice.js';
-import { setCustomers } from '../features/customers/slice.js';
+import { setCustomers, updateCustomerInState } from '../features/customers/slice.js';
 import { customersService } from '../features/customers/slice.js';
 import { setProducts } from '../features/products/slice.js';
 import { productsService } from '../features/products/slice.js';
@@ -35,11 +31,6 @@ import * as cashService from '../features/cash/service.js';
 import * as receiptsService from '../features/receipts/service.js';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 
-const TABS = {
-  ORDERS: 'orders',
-  RETURNS: 'returns',
-};
-
 export function Bottles() {
   const dispatch = useDispatch();
   const { t } = useTranslation();
@@ -50,7 +41,6 @@ export function Bottles() {
   const { items: payments } = useSelector((state) => state.payments);
   const { user } = useSelector((state) => state.auth);
 
-  const [activeTab, setActiveTab] = useState(TABS.ORDERS);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [lastOrder, setLastOrder] = useState(null);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -128,6 +118,27 @@ export function Bottles() {
       }
       dispatch(setCashBalance(result.newCashBalance));
 
+      // Update customer hasDispenser: if order contains dispenser product → true; else use manual checkbox
+      const orderItems = result.order.items || (result.order.productId ? [{ productId: result.order.productId }] : []);
+      const orderContainsDispenser = orderItems.some((item) => {
+        const p = products.find((pr) => pr.id === item.productId);
+        return p && (p.name || '').toLowerCase().includes('dispenser');
+      });
+      const newHasDispenser = orderContainsDispenser || !!(orderData.hasDispenser ?? false);
+      const currentCustomer = customers.find((c) => c.id === selectedCustomerId);
+      if (currentCustomer && (orderContainsDispenser || orderData.hasDispenser !== undefined)) {
+        try {
+          const updatedCustomer = await customersService.updateCustomerHasDispenser(
+            selectedCustomerId,
+            newHasDispenser,
+            customers
+          );
+          dispatch(updateCustomerInState(updatedCustomer));
+        } catch (e) {
+          console.warn('Could not update hasDispenser:', e);
+        }
+      }
+
       // Show success message
       const orderNumber = result.order.orderNumber || '';
       const successMsg = t('orderCreated') + (orderNumber ? ` - ${t('order')} #${orderNumber}` : '');
@@ -166,62 +177,13 @@ export function Bottles() {
     }
   };
 
-  // Handle return submission (productId optional - when provided, increases product stock for returnable)
-  const handleReturnSubmit = async (customerId, quantity, notes, productId) => {
+  // Mark order as ready (adds to Deliveries Ready tab for driver)
+  const handleMarkReady = async (orderId) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
     try {
-      // Validate that customer has enough returnable bottles
-      const maxReturnable = getMaxReturnable(customerId);
-      if (maxReturnable !== undefined && quantity > maxReturnable) {
-        dispatch(setError(`Cannot return ${quantity} bottles. Customer only has ${maxReturnable} returnable bottles outstanding.`));
-        dispatch(setLoading(false));
-        return;
-      }
-
-      const newTransaction = await bottlesService.createTransaction(
-        customerId,
-        'returned',
-        quantity,
-        notes,
-        user?.id || null,
-        transactions,
-        productId || undefined
-      );
-
-      dispatch(addTransaction(newTransaction));
-
-      // For returnable items: increase product stock only (not Ready to Ship)
-      if (productId) {
-        try {
-          const updatedProduct = await productsService.increaseStockForReturn(productId, quantity, products);
-          dispatch(updateProductInState(updatedProduct));
-        } catch (stockErr) {
-          dispatch(setError(stockErr.message));
-        }
-      }
-
-      setSelectedCustomerId(customerId);
-      setActiveTab(TABS.ORDERS); // Switch back to orders tab
-    } catch (err) {
-      dispatch(setError(err.message));
-    } finally {
-      dispatch(setLoading(false));
-    }
-  };
-
-  // Mark order as shipped (decreases stock and Ready to Ship)
-  const handleMarkAsShipped = async (orderId) => {
-    dispatch(setLoading(true));
-    dispatch(setError(null));
-    try {
-      const { order: updatedOrder, products: updatedProducts } = await ordersService.markOrderAsShipped(
-        orderId,
-        orders,
-        products
-      );
+      const updatedOrder = await ordersService.markOrderReady(orderId, orders);
       dispatch(updateOrderInState(updatedOrder));
-      dispatch(setProducts(updatedProducts));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -251,17 +213,6 @@ export function Bottles() {
     setSelectedCustomerId('');
   };
 
-  const getMaxReturnable = (customerId) => {
-    if (!customerId) return undefined;
-    // Use calculateOutstandingReturnable to only count returnable products
-    return bottlesService.calculateOutstandingReturnable(
-      customerId,
-      transactions,
-      orders,
-      products
-    );
-  };
-
   if (isLoading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -275,39 +226,7 @@ export function Bottles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900 pb-4">{t('bottles')}</h1>
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => {
-              setActiveTab(TABS.ORDERS);
-              setShowReceipt(false);
-              setSelectedCustomerId(''); // Reset selection when switching tabs
-            }}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === TABS.ORDERS
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {t('orders')}
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab(TABS.RETURNS);
-              setShowReceipt(false);
-              setSelectedCustomerId(''); // Reset selection when switching tabs
-            }}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === TABS.RETURNS
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {t('returns')}
-          </button>
-        </nav>
-      </div>
+      <h1 className="text-2xl font-bold text-gray-900">{t('placeOrders')}</h1>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -374,9 +293,7 @@ export function Bottles() {
         </div>
       )} */}
 
-      {/* Orders Tab */}
-      {activeTab === TABS.ORDERS && (
-        <div className="space-y-6">
+      <div className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('placeOrder')}</h2>
@@ -416,7 +333,7 @@ export function Bottles() {
           </div>
         </div>
 
-        {/* Recent Orders - Mark as Shipped */}
+        {/* Recent Orders - Mark as Ready */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('recentOrders')}</h2>
           {orders.length === 0 ? (
@@ -431,7 +348,7 @@ export function Bottles() {
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('product')}</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('quantity')}</th>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('status')}</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('markReady')}</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -456,21 +373,26 @@ export function Bottles() {
                           <td className="px-4 py-2">{productSummary}</td>
                           <td className="px-4 py-2">{totalQty}</td>
                           <td className="px-4 py-2">
-                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                              order.status === 'shipped' ? 'bg-green-100 text-green-800' : order.status === 'completed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {order.status === 'shipped' ? t('shipped') : order.status === 'completed' ? t('completed') : t('pending')}
-                            </span>
+                            {(() => {
+                              const status = ordersService.getDeliveryStatus(order);
+                              const style = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                              const label = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                              return (
+                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${style}`}>
+                                  {label}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="px-4 py-2 text-right">
-                            {order.status !== 'shipped' && (
+                            {ordersService.getDeliveryStatus(order) === 'pending' && (
                               <button
                                 type="button"
-                                onClick={() => handleMarkAsShipped(order.id)}
+                                onClick={() => handleMarkReady(order.id)}
                                 disabled={isLoading}
                                 className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50"
                               >
-                                {t('markAsShipped')}
+                                {t('markReady')}
                               </button>
                             )}
                           </td>
@@ -482,77 +404,9 @@ export function Bottles() {
             </div>
           )}
         </div>
-        </div>
-      )}
+      </div>
 
-      {/* Returns Tab */}
-      {activeTab === TABS.RETURNS && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('returnBottles')}</h2>
-
-              <div className="mb-4">
-                <CustomerSearch
-                  customers={customersService.getActiveCustomers(customers)}
-                  value={selectedCustomerId}
-                  onChange={setSelectedCustomerId}
-                  required={true}
-                  placeholder={t('search') + ' ' + t('customer').toLowerCase() + '...'}
-                  filter={(customer) => {
-                    // Only show customers who have orders with returnable products
-                    const customerOrders = orders.filter((o) => o.customerId === customer.id);
-                    if (customerOrders.length === 0) return false;
-                    
-                    // Check if any order has a returnable product
-                    return customerOrders.some((order) => {
-                      const product = products.find((p) => p.id === order.productId);
-                      return product && product.isReturnable !== false; // Default to true if not set
-                    });
-                  }}
-                />
-              </div>
-
-              {selectedCustomerId && (
-                <ReturnForm
-                  customerId={selectedCustomerId}
-                  maxReturnable={getMaxReturnable(selectedCustomerId)}
-                  onSubmit={handleReturnSubmit}
-                  onCancel={() => {
-                    setSelectedCustomerId('');
-                  }}
-                  isLoading={isLoading}
-                />
-              )}
-            </div>
-
-            <div>
-              {selectedCustomerId && (
-                <>
-                  <CustomerBottleBalance customerId={selectedCustomerId} />
-                  <div className="mt-6">
-                    <TransactionHistory customerId={selectedCustomerId} />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Customers with Outstanding Bottles */}
-          {!selectedCustomerId && (
-            <CustomersWithOutstandingBottles
-              onSelectCustomer={(customerId) => {
-                setSelectedCustomerId(customerId);
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Summary Section */}
-      {activeTab === TABS.ORDERS && !selectedCustomerId && (
-        <BottleSummary />
-      )}
+      {!selectedCustomerId && <BottleSummary />}
     </div>
   );
 }

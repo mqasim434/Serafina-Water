@@ -37,6 +37,7 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
     address: '',
     preferredLanguage: currentLanguage,
     productPrices: {},
+    hasDispenser: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -85,6 +86,7 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
         address: customer.address || '',
         preferredLanguage: customer.preferredLanguage || currentLanguage,
         productPrices: productPrices,
+        hasDispenser: !!customer.hasDispenser,
       });
     } else {
       // Reset form for new customer - initialize productPrices with default prices from products
@@ -100,13 +102,18 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
         address: '',
         preferredLanguage: currentLanguage,
         productPrices: productPrices,
+        hasDispenser: false,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId, currentLanguage, productIdsString]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    if (name === 'hasDispenser') {
+      setFormData((prev) => ({ ...prev, hasDispenser: !!checked }));
+      return;
+    }
     
     // Handle product prices (format: price_productId)
     if (name.startsWith('price_')) {
@@ -271,6 +278,20 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
           <option value="en">{t('english')}</option>
           <option value="ur">{t('urdu')}</option>
         </select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="hasDispenser"
+          name="hasDispenser"
+          checked={formData.hasDispenser}
+          onChange={handleChange}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label htmlFor="hasDispenser" className="text-sm font-medium text-gray-700">
+          {t('hasDispenser') || 'Has Dispenser'}
+        </label>
       </div>
 
       {/* Product Prices Section - Dynamic based on available products */}

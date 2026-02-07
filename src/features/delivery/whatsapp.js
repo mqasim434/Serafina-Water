@@ -21,38 +21,79 @@ export function formatPhoneForWhatsApp(phone) {
 }
 
 /**
- * Build order summary text for WhatsApp message
+ * Build order summary text for WhatsApp message (English + Urdu)
  * @param {Object} order - Order object
  * @param {Object} customer - Customer object
  * @param {import('../products/types.js').Product[]} products - Products array
+ * @param {number} [amountPaid] - Amount paid on delivery
+ * @param {number} [outstandingAmount] - Outstanding amount for this order (before payment)
  * @returns {string} Order summary text
  */
-export function buildOrderSummaryForWhatsApp(order, customer, products) {
+export function buildOrderSummaryForWhatsApp(order, customer, products, amountPaid = 0, outstandingAmount) {
   const lineItems = getOrderLineItems(order);
+  const outstanding = outstandingAmount ?? order.outstandingAmount ?? 0;
+  const paid = amountPaid ?? 0;
+  const remaining = Math.max(0, outstanding - paid);
+  const total = order.totalAmount ?? 0;
+  const custName = customer?.name || 'Customer';
 
-  const lines = [
-    `*Order #${order.orderNumber}* - Delivered ✓`,
-    '',
-    `Hi ${customer?.name || 'Customer'}!`,
-    '',
-    'Your order has been delivered:',
-  ];
-
+  // Build line item strings (shared)
+  const itemStrsEn = [];
+  const itemStrsUr = [];
   lineItems.forEach((item) => {
     const product = products?.find((p) => p.id === item.productId);
     const name = product ? `${product.name} (${product.size})` : 'Item';
     const qty = item.quantity ?? 0;
     const price = item.price ?? 0;
     const lineTotal = qty * price;
-    lines.push(`• ${name} x ${qty} — Rs. ${lineTotal.toLocaleString()}`);
+    const amt = lineTotal.toLocaleString();
+    itemStrsEn.push(`• ${name} x ${qty} — Rs. ${amt}`);
+    itemStrsUr.push(`• ${name} x ${qty} — Rs. ${amt}`);
   });
 
-  lines.push('');
-  lines.push(`*Total: Rs. ${(order.totalAmount ?? 0).toLocaleString()}*`);
-  lines.push('');
-  lines.push('Thank you for your order! 🙏');
+  // English section
+  const en = [
+    `*Order #${order.orderNumber}* - Delivered ✓`,
+    '',
+    `Hi ${custName}!`,
+    '',
+    'Your order has been delivered:',
+    ...itemStrsEn,
+    '',
+    `*Total: Rs. ${total.toLocaleString()}*`,
+    ...(outstanding > 0
+      ? [
+          '',
+          `Amount paid: Rs. ${paid.toLocaleString()}`,
+          remaining > 0 ? `Remaining balance: Rs. ${remaining.toLocaleString()}` : 'Paid in full ✓',
+        ]
+      : []),
+    '',
+    'Thank you for your order! 🙏',
+  ];
 
-  return lines.join('\n');
+  // Urdu section
+  const ur = [
+    `*آرڈر #${order.orderNumber}* - ڈیلیور شدہ ✓`,
+    '',
+    `سلام ${custName}!`,
+    '',
+    'آپ کا آرڈر ڈیلیور ہو گیا ہے:',
+    ...itemStrsUr,
+    '',
+    `*کل: Rs. ${total.toLocaleString()}*`,
+    ...(outstanding > 0
+      ? [
+          '',
+          `ادا شدہ رقم: Rs. ${paid.toLocaleString()}`,
+          remaining > 0 ? `باقی رقم: Rs. ${remaining.toLocaleString()}` : 'مکمل ادائیگی ✓',
+        ]
+      : []),
+    '',
+    'آپ کے آرڈر کا شکریہ! 🙏',
+  ];
+
+  return en.join('\n') + '\n\n─────────────────\n\n' + ur.join('\n');
 }
 
 /**
@@ -60,13 +101,15 @@ export function buildOrderSummaryForWhatsApp(order, customer, products) {
  * @param {Object} order - Order object
  * @param {Object} customer - Customer object
  * @param {import('../products/types.js').Product[]} products - Products array
+ * @param {number} [amountPaid] - Amount paid on delivery
+ * @param {number} [outstandingAmount] - Outstanding amount for this order (before payment)
  * @returns {boolean} True if WhatsApp was opened, false if no valid phone
  */
-export function openWhatsAppWithOrderSummary(order, customer, products) {
+export function openWhatsAppWithOrderSummary(order, customer, products, amountPaid = 0, outstandingAmount) {
   const phone = formatPhoneForWhatsApp(customer?.phone);
   if (!phone) return false;
 
-  const message = buildOrderSummaryForWhatsApp(order, customer, products);
+  const message = buildOrderSummaryForWhatsApp(order, customer, products, amountPaid, outstandingAmount);
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;
