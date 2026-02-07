@@ -16,7 +16,21 @@ function uuidV4() {
   });
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+};
+
 export default function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Allow', 'OPTIONS, GET');
+    Object.entries(corsHeaders).forEach(([k, v]) => res.setHeader(k, v));
+    return res.status(204).end();
+  }
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -34,12 +48,17 @@ export default function handler(req, res) {
     return res.status(500).json({ error: 'ImageKit not configured' });
   }
 
-  const token = req.query.token || uuidV4();
-  const expire = Number(req.query.expire) || Math.floor(Date.now() / 1000) + 1800; // 30 min (ImageKit requires < 1 hour)
-  const message = token + expire;
-  const signature = crypto.createHmac('sha1', privateKey).update(message).digest('hex');
+  try {
+    const query = req.query || {};
+    const token = query.token || uuidV4();
+    const expire = Number(query.expire) || Math.floor(Date.now() / 1000) + 1800; // 30 min (ImageKit requires < 1 hour)
+    const message = token + expire;
+    const signature = crypto.createHmac('sha1', privateKey).update(message).digest('hex');
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 'no-store');
-  return res.status(200).json({ token, signature, expire });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).json({ token, signature, expire });
+  } catch (err) {
+    console.error('ImageKit auth error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
 };
