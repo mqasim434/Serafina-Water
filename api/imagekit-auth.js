@@ -6,7 +6,7 @@
  *   IMAGEKIT_PRIVATE_KEY - Your ImageKit private API key (never use VITE_ prefix here)
  */
 
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 function uuidV4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -16,7 +16,7 @@ function uuidV4() {
   });
 }
 
-module.exports = function handler(req, res) {
+export default function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method not allowed' });
