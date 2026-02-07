@@ -4,8 +4,10 @@
  * Application header with language switcher and user menu
  */
 
+import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setLanguage } from '../../features/i18n/slice.js';
+import logoImg from '../../assets/logo.png';
 import { logout } from '../../features/auth/slice.js';
 import { i18nService } from '../../features/i18n/slice.js';
 import { signOut } from '../../features/auth/service.js';
@@ -40,7 +42,7 @@ export function Header({ onMenuClick }) {
   return (
     <header className="bg-blue-50 shadow-sm border-b border-blue-100 sticky top-0 z-40">
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-[70px]">
           {/* Logo/Brand and Mobile Menu */}
           <div className="flex items-center gap-4">
             {onMenuClick && (
@@ -64,7 +66,9 @@ export function Header({ onMenuClick }) {
                 </svg>
               </button>
             )}
-            <h1 className="text-xl font-bold text-gray-900">{t('appName')}</h1>
+            <Link to="/" className="flex items-center">
+              <img src={logoImg} alt={t('appName')} className="h-16 w-auto object-contain" />
+            </Link>
           </div>
 
           {/* Right side actions */}

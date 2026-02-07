@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 import { DeliveryScreen } from '../features/delivery/components/DeliveryScreen.jsx';
 import { DeliveredOrderDetails } from '../features/delivery/components/DeliveredOrderDetails.jsx';
+import { openWhatsAppWithOrderSummary } from '../features/delivery/whatsapp.js';
 import { ordersService } from '../features/orders/slice.js';
 import { setOrders, updateOrderInState, setLoading, setError, setCashBalance } from '../features/orders/slice.js';
 import { addPayment, setPayments } from '../features/payments/slice.js';
@@ -101,6 +102,7 @@ export function Deliveries() {
           lastUpdated: new Date().toISOString(),
         }));
       }
+      openWhatsAppWithOrderSummary(selectedOrder, selectedCustomer, products);
       setSelectedOrder(null);
     } catch (err) {
       dispatch(setError(err.message));
