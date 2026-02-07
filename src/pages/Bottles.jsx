@@ -15,6 +15,7 @@ import {
   setLoading,
   setTransactions,
   setError,
+  addTransaction,
 } from '../features/bottles/slice.js';
 import { bottlesService } from '../features/bottles/slice.js';
 import { setCustomers, updateCustomerInState } from '../features/customers/slice.js';
