@@ -96,23 +96,27 @@ export function Dashboard() {
     0
   );
 
-  // Calculate outstanding bottles (returnable products only)
-  const returnableSummary = bottlesService.calculateGlobalSummaryReturnable(
-    transactions,
-    orders,
+  // Outstanding bottles: current day only (today's issued minus today's returned, returnable products)
+  const todayTransactions = transactions.filter((t) => {
+    const txDate = cashService.formatDate(new Date(t.createdAt));
+    return txDate === today;
+  });
+  const returnableSummaryToday = bottlesService.calculateGlobalSummaryReturnable(
+    todayTransactions,
+    todayDeliveries,
     products
   );
-  const outstandingBottles = returnableSummary.totalOutstandingReturnable;
+  const outstandingBottles = returnableSummaryToday.totalOutstandingReturnable;
 
-  // Cash on hand
-  const cashOnHand = cashBalance?.amount || 0;
-
-  // Calculate today's expenses
+  // Calculate today's expenses (used for Today's Expenses card and for cash in hand)
   const todayExpenses = expenses.filter((expense) => {
     const expenseDate = cashService.formatDate(new Date(expense.createdAt));
     return expenseDate === today;
   });
   const todayExpensesAmount = expensesService.calculateTotalExpenses(todayExpenses);
+
+  // Cash in hand: current day only (today's order income minus today's expenses)
+  const cashOnHand = Math.max(0, todayDeliveriesAmount - todayExpensesAmount);
 
   // Get water quality alerts
   const criticalEntries = waterQualityService.getCriticalEntries(waterQualityEntries);
