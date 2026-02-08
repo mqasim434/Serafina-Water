@@ -131,11 +131,7 @@ export function Dashboard() {
   // Cash in hand: current day only (today's order income minus today's expenses)
   const cashOnHand = Math.max(0, todayDeliveriesAmount - todayExpensesAmount);
 
-  // Get water quality alerts
-  const criticalEntries = waterQualityService.getCriticalEntries(waterQualityEntries);
-  const warningEntries = waterQualityService.getEntriesWithAlerts(waterQualityEntries).filter(
-    (entry) => entry.status === 'warning'
-  );
+  // Get latest water quality entry (alerts shown based on most recent entry only)
   const latestEntry = waterQualityService.getLatestEntry(waterQualityEntries);
 
   // Low stock alerts
@@ -290,46 +286,34 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Water Quality Alerts */}
-      {(criticalEntries.length > 0 || warningEntries.length > 0) && (
+      {/* Water Quality Alerts (based on most recent entry only) */}
+      {latestEntry && (latestEntry.status === 'critical' || latestEntry.status === 'warning') && (
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('waterQualityAlerts')}</h2>
-          {criticalEntries.length > 0 && (
-            <div className="mb-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <span className="text-red-600 font-bold text-lg mr-2">🔴</span>
-                  <span className="text-red-900 font-semibold">
-                    {t('criticalAlerts')}: {criticalEntries.length}
-                  </span>
-                </div>
-                <p className="text-sm text-red-700 mt-2">{t('criticalWaterQualityIssues')}</p>
+          {latestEntry.status === 'critical' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <span className="text-red-600 font-bold text-lg mr-2">🔴</span>
+                <span className="text-red-900 font-semibold">{t('criticalAlerts')}</span>
               </div>
+              <p className="text-sm text-red-700 mt-2">{t('criticalWaterQualityIssues')}</p>
+              <p className="text-sm text-red-600 mt-1">
+                {t('lastEntry')}: {new Date(latestEntry.date).toLocaleDateString()}
+                {latestEntry.time && ` ${formatTime12h(latestEntry.time)}`}
+              </p>
             </div>
           )}
-          {warningEntries.length > 0 && (
-            <div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-center">
-                  <span className="text-yellow-600 font-bold text-lg mr-2">🟡</span>
-                  <span className="text-yellow-900 font-semibold">
-                    {t('warnings')}: {warningEntries.length}
-                  </span>
-                </div>
-                <p className="text-sm text-yellow-700 mt-2">{t('minorWaterQualityIssues')}</p>
+          {latestEntry.status === 'warning' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <span className="text-yellow-600 font-bold text-lg mr-2">🟡</span>
+                <span className="text-yellow-900 font-semibold">{t('warnings')}</span>
               </div>
-            </div>
-          )}
-          {latestEntry && (
-            <div className="mt-4 text-sm text-gray-600">
-              {t('lastEntry')}: {new Date(latestEntry.date).toLocaleDateString()} -{' '}
-              {latestEntry.status === 'normal' ? (
-                <span className="text-green-600">{t('normal')}</span>
-              ) : latestEntry.status === 'warning' ? (
-                <span className="text-yellow-600">{t('warning')}</span>
-              ) : (
-                <span className="text-red-600">{t('critical')}</span>
-              )}
+              <p className="text-sm text-yellow-700 mt-2">{t('minorWaterQualityIssues')}</p>
+              <p className="text-sm text-yellow-600 mt-1">
+                {t('lastEntry')}: {new Date(latestEntry.date).toLocaleDateString()}
+                {latestEntry.time && ` ${formatTime12h(latestEntry.time)}`}
+              </p>
             </div>
           )}
         </div>
