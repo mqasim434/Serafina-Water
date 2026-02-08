@@ -23,6 +23,23 @@ const DEFAULT_RANGES = {
 };
 
 /**
+ * Format time from HH:MM (24-hour) to 12-hour AM/PM
+ * @param {string} time - Time in HH:MM or HH:MM:SS format
+ * @returns {string} Time in 12-hour format (e.g. "2:30 PM") or original if invalid
+ */
+export function formatTime12h(time) {
+  if (!time || typeof time !== 'string') return time || '';
+  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return time;
+  const [, h, m] = match;
+  const hour = parseInt(h, 10);
+  const min = parseInt(m, 10);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${hour12}:${String(min).padStart(2, '0')} ${period}`;
+}
+
+/**
  * Generate unique ID for water quality entry
  * @returns {string} Unique ID
  */

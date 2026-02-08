@@ -6,6 +6,7 @@
 
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import { formatTime12h } from '../service.js';
 
 /**
  * Water Quality List component
@@ -14,7 +15,11 @@ export function WaterQualityList() {
   const { t } = useTranslation();
   const { items: entries, ranges } = useSelector((state) => state.waterQuality);
 
-  const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const sortedEntries = [...entries].sort((a, b) => {
+    const dateDiff = new Date(b.date) - new Date(a.date);
+    if (dateDiff !== 0) return dateDiff;
+    return (b.time || '').localeCompare(a.time || '', undefined, { numeric: true });
+  });
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -82,7 +87,7 @@ export function WaterQualityList() {
                   {new Date(entry.date).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {entry.time || 'N/A'}
+                  {entry.time ? formatTime12h(entry.time) : 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {entry.pH}

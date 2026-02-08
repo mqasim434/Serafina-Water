@@ -11,6 +11,7 @@ import * as cashService from '../features/cash/service.js';
 import { bottlesService, setTransactions } from '../features/bottles/slice.js';
 import { expensesService, setExpenses } from '../features/expenses/slice.js';
 import { waterQualityService, setEntries } from '../features/waterQuality/slice.js';
+import { formatTime12h } from '../features/waterQuality/service.js';
 import { ordersService, setOrders, setCashBalance } from '../features/orders/slice.js';
 import { productsService, setProducts } from '../features/products/slice.js';
 
@@ -189,7 +190,7 @@ export function Dashboard() {
                 {new Date(latestEntry.date).toLocaleDateString()}
                 {latestEntry.time && (
                   <span className="text-sm font-normal ml-2 opacity-90">
-                    {latestEntry.time}
+                    {formatTime12h(latestEntry.time)}
                   </span>
                 )}
               </p>
