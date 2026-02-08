@@ -46,6 +46,13 @@ export function Bottles() {
   const [showReceipt, setShowReceipt] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showAllOrdersView, setShowAllOrdersView] = useState(false);
+  const [ordersRangeStart, setOrdersRangeStart] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return cashService.formatDate(d);
+  });
+  const [ordersRangeEnd, setOrdersRangeEnd] = useState(cashService.getTodayDate());
 
   // Load all necessary data on mount
   useEffect(() => {
@@ -213,6 +220,21 @@ export function Bottles() {
     setSelectedCustomerId('');
   };
 
+  const today = cashService.getTodayDate();
+  const todayOrders = orders.filter(
+    (o) => cashService.formatDate(new Date(o.createdAt)) === today
+  );
+  const allOrdersInRange = showAllOrdersView
+    ? orders.filter((o) => {
+        const d = cashService.formatDate(new Date(o.createdAt));
+        return d >= ordersRangeStart && d <= ordersRangeEnd;
+      })
+    : [];
+  const displayOrders = showAllOrdersView ? allOrdersInRange : todayOrders;
+  const sortedDisplayOrders = [...displayOrders].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+
   if (isLoading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -224,6 +246,159 @@ export function Bottles() {
     );
   }
 
+  /* Full-screen All Orders view when user clicks "Show all orders" */
+  if (showAllOrdersView) {
+    return (
+      <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowAllOrdersView(false)}
+            className="inline-flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            {t('backToToday')}
+          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('allOrders')}</h1>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg space-y-3">
+            <p className="text-sm font-medium text-gray-700">{t('dateRange')}</p>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label htmlFor="orders-start" className="block text-xs text-gray-500 mb-1">{t('startDate')}</label>
+                <input
+                  id="orders-start"
+                  type="date"
+                  value={ordersRangeStart}
+                  onChange={(e) => setOrdersRangeStart(e.target.value)}
+                  className="block w-full sm:w-auto min-w-[140px] px-2 py-1.5 border border-gray-300 rounded text-sm"
+                />
+              </div>
+              <div>
+                <label htmlFor="orders-end" className="block text-xs text-gray-500 mb-1">{t('endDate')}</label>
+                <input
+                  id="orders-end"
+                  type="date"
+                  value={ordersRangeEnd}
+                  onChange={(e) => setOrdersRangeEnd(e.target.value)}
+                  className="block w-full sm:w-auto min-w-[140px] px-2 py-1.5 border border-gray-300 rounded text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {sortedDisplayOrders.length === 0 ? (
+            <p className="text-gray-500 text-sm py-8 text-center">{t('noOrders')}</p>
+          ) : (
+            <>
+              <div className="block sm:hidden space-y-3">
+                {sortedDisplayOrders.slice(0, 50).map((order) => {
+                  const customer = customers.find((c) => c.id === order.customerId);
+                  const lineItems = ordersService.getOrderLineItems(order);
+                  const totalQty = ordersService.getOrderTotalQuantity(order);
+                  const productSummary = lineItems
+                    .map((item) => {
+                      const p = products.find((pr) => pr.id === item.productId);
+                      return p ? `${p.name} (${p.size}) × ${item.quantity}` : null;
+                    })
+                    .filter(Boolean)
+                    .join(', ') || '-';
+                  const status = ordersService.getDeliveryStatus(order);
+                  const statusLabel = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                  const statusStyle = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                  return (
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <span className="font-medium text-gray-900">{order.orderNumber ?? order.id}</span>
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusStyle}`}>{statusLabel}</span>
+                      </div>
+                      <p className="text-sm text-gray-600">{customer?.name ?? order.customerId}</p>
+                      <p className="text-xs text-gray-500">{productSummary}</p>
+                      <p className="text-xs text-gray-500">{t('quantity')}: {totalQty}</p>
+                      {status === 'pending' && (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkReady(order.id)}
+                          disabled={isLoading}
+                          className="w-full mt-2 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded disabled:opacity-50"
+                        >
+                          {t('markReady')}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('order')} #</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('customer')}</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('product')}</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('quantity')}</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('status')}</th>
+                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('markReady')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {sortedDisplayOrders.slice(0, 50).map((order) => {
+                      const customer = customers.find((c) => c.id === order.customerId);
+                      const lineItems = ordersService.getOrderLineItems(order);
+                      const totalQty = ordersService.getOrderTotalQuantity(order);
+                      const productSummary = lineItems
+                        .map((item) => {
+                          const p = products.find((pr) => pr.id === item.productId);
+                          return p ? `${p.name} (${p.size}) × ${item.quantity}` : null;
+                        })
+                        .filter(Boolean)
+                        .join(', ') || '-';
+                      return (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 font-medium">{order.orderNumber ?? order.id}</td>
+                          <td className="px-4 py-2">{customer?.name ?? order.customerId}</td>
+                          <td className="px-4 py-2">{productSummary}</td>
+                          <td className="px-4 py-2">{totalQty}</td>
+                          <td className="px-4 py-2">
+                            {(() => {
+                              const status = ordersService.getDeliveryStatus(order);
+                              const style = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                              const label = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                              return (
+                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${style}`}>{label}</span>
+                              );
+                            })()}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            {ordersService.getDeliveryStatus(order) === 'pending' && (
+                              <button
+                                type="button"
+                                onClick={() => handleMarkReady(order.id)}
+                                disabled={isLoading}
+                                className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50"
+                              >
+                                {t('markReady')}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* Normal Place Orders view */
   return (
     <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('placeOrders')}</h1>
@@ -333,18 +508,29 @@ export function Bottles() {
           </div>
         </div>
 
-        {/* Recent Orders - Mark as Ready */}
+        {/* Recent Orders - Today only; "Show all orders" replaces whole tab */}
         <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t('recentOrders')}</h2>
-          {orders.length === 0 ? (
-            <p className="text-gray-500 text-sm">{t('noOrders')}</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+              {t('recentOrders')}
+              <span className="ml-2 text-sm font-normal text-gray-500">— {today}</span>
+            </h2>
+            <button
+              type="button"
+              onClick={() => setShowAllOrdersView(true)}
+              className="w-full sm:w-auto px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md"
+            >
+              {t('showAllOrders')}
+            </button>
+          </div>
+
+          {sortedDisplayOrders.length === 0 ? (
+            <p className="text-gray-500 text-sm">{t('noOrdersToday')}</p>
           ) : (
             <>
               {/* Mobile card layout */}
               <div className="block sm:hidden space-y-3">
-                {[...orders]
-                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                  .slice(0, 25)
+                {sortedDisplayOrders.slice(0, 50)
                   .map((order) => {
                     const customer = customers.find((c) => c.id === order.customerId);
                     const lineItems = ordersService.getOrderLineItems(order);
@@ -396,10 +582,7 @@ export function Bottles() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {[...orders]
-                    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                    .slice(0, 25)
-                    .map((order) => {
+                  {sortedDisplayOrders.slice(0, 50).map((order) => {
                       const customer = customers.find((c) => c.id === order.customerId);
                       const lineItems = ordersService.getOrderLineItems(order);
                       const totalQty = ordersService.getOrderTotalQuantity(order);
