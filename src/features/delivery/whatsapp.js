@@ -27,9 +27,10 @@ export function formatPhoneForWhatsApp(phone) {
  * @param {import('../products/types.js').Product[]} products - Products array
  * @param {number} [amountPaid] - Amount paid on delivery
  * @param {number} [outstandingAmount] - Outstanding amount for this order (before payment)
+ * @param {string} [deliveryProofPhotoUrl] - URL of delivery proof photo (included as clickable link; wa.me does not support image attachments)
  * @returns {string} Order summary text
  */
-export function buildOrderSummaryForWhatsApp(order, customer, products, amountPaid = 0, outstandingAmount) {
+export function buildOrderSummaryForWhatsApp(order, customer, products, amountPaid = 0, outstandingAmount, deliveryProofPhotoUrl) {
   const lineItems = getOrderLineItems(order);
   const outstanding = outstandingAmount ?? order.outstandingAmount ?? 0;
   const paid = amountPaid ?? 0;
@@ -51,6 +52,13 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
     itemStrsUr.push(`• ${name} x ${qty} — Rs. ${amt}`);
   });
 
+  const proofBlock = deliveryProofPhotoUrl
+    ? ['', 'Delivery proof photo (tap to view):', deliveryProofPhotoUrl]
+    : [];
+  const proofBlockUr = deliveryProofPhotoUrl
+    ? ['', 'ڈیلیوری ثبوت فوٹو (دیکھنے کے لیے ٹیپ کریں):', deliveryProofPhotoUrl]
+    : [];
+
   // English section
   const en = [
     `*Order #${order.orderNumber}* - Delivered ✓`,
@@ -68,6 +76,7 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
           remaining > 0 ? `Remaining balance: Rs. ${remaining.toLocaleString()}` : 'Paid in full ✓',
         ]
       : []),
+    ...proofBlock,
     '',
     'Thank you for your order! 🙏',
   ];
@@ -89,6 +98,7 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
           remaining > 0 ? `باقی رقم: Rs. ${remaining.toLocaleString()}` : 'مکمل ادائیگی ✓',
         ]
       : []),
+    ...proofBlockUr,
     '',
     'آپ کے آرڈر کا شکریہ! 🙏',
   ];
@@ -103,13 +113,14 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
  * @param {import('../products/types.js').Product[]} products - Products array
  * @param {number} [amountPaid] - Amount paid on delivery
  * @param {number} [outstandingAmount] - Outstanding amount for this order (before payment)
+ * @param {string} [deliveryProofPhotoUrl] - URL of delivery proof photo (included as clickable link)
  * @returns {boolean} True if WhatsApp was opened, false if no valid phone
  */
-export function openWhatsAppWithOrderSummary(order, customer, products, amountPaid = 0, outstandingAmount) {
+export function openWhatsAppWithOrderSummary(order, customer, products, amountPaid = 0, outstandingAmount, deliveryProofPhotoUrl) {
   const phone = formatPhoneForWhatsApp(customer?.phone);
   if (!phone) return false;
 
-  const message = buildOrderSummaryForWhatsApp(order, customer, products, amountPaid, outstandingAmount);
+  const message = buildOrderSummaryForWhatsApp(order, customer, products, amountPaid, outstandingAmount, deliveryProofPhotoUrl);
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;

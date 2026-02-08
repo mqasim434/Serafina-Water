@@ -121,7 +121,8 @@ export function Deliveries() {
         selectedCustomer,
         products,
         options.amountPaid ?? 0,
-        selectedOrder.outstandingAmount ?? 0
+        selectedOrder.outstandingAmount ?? 0,
+        options.deliveryProofPhotoUrl ?? result.order?.deliveryProofPhotoUrl
       );
       setSelectedOrder(null);
     } catch (err) {
