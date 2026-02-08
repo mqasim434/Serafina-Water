@@ -14,6 +14,9 @@ function isDispenserProduct(product) {
   return (product?.name || '').toLowerCase().includes('dispenser');
 }
 
+/** Set to true to show "Has Dispenser" checkbox in Place Order */
+const SHOW_HAS_DISPENSER_CHECKBOX = false;
+
 /**
  * Order Form props
  * @typedef {Object} OrderFormProps
@@ -285,7 +288,7 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
         </div>
       )}
 
-      {activeProducts.some(isDispenserProduct) && (
+      {SHOW_HAS_DISPENSER_CHECKBOX && activeProducts.some(isDispenserProduct) && (
         <div className="flex items-center gap-2">
           <input
             type="checkbox"

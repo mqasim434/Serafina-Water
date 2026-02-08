@@ -7,7 +7,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { OrderForm } from '../features/orders/components/OrderForm.jsx';
-import { BottleSummary } from '../features/bottles/components/BottleSummary.jsx';
 import { CustomerBottleBalance } from '../features/bottles/components/CustomerBottleBalance.jsx';
 import { TransactionHistory } from '../features/bottles/components/TransactionHistory.jsx';
 import { CustomerSearch } from '../features/customers/components/CustomerSearch.jsx';
@@ -452,7 +451,6 @@ export function Bottles() {
         </div>
       </div>
 
-      {!selectedCustomerId && <BottleSummary />}
     </div>
   );
 }

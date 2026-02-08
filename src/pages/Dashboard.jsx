@@ -14,6 +14,7 @@ import { waterQualityService, setEntries } from '../features/waterQuality/slice.
 import { formatTime12h } from '../features/waterQuality/service.js';
 import { ordersService, setOrders, setCashBalance } from '../features/orders/slice.js';
 import { productsService, setProducts } from '../features/products/slice.js';
+import { customersService, setCustomers } from '../features/customers/slice.js';
 
 /**
  * Dashboard Widget Component
@@ -51,6 +52,7 @@ export function Dashboard() {
   const { items: expenses } = useSelector((state) => state.expenses);
   const { cashBalance } = useSelector((state) => state.orders);
   const { items: waterQualityEntries } = useSelector((state) => state.waterQuality);
+  const { items: customers } = useSelector((state) => state.customers);
 
   // Load all dashboard data on mount so cards reflect real-time data
   useEffect(() => {
@@ -63,6 +65,7 @@ export function Dashboard() {
           loadedProducts,
           loadedExpenses,
           loadedEntries,
+          loadedCustomers,
         ] = await Promise.all([
           ordersService.loadOrders(),
           ordersService.loadCashBalance(),
@@ -70,6 +73,7 @@ export function Dashboard() {
           productsService.loadProducts(),
           expensesService.loadExpenses(),
           waterQualityService.loadWaterQualityEntries(),
+          customersService.loadCustomers(),
         ]);
         dispatch(setOrders(loadedOrders));
         dispatch(setCashBalance(loadedCashBalance));
@@ -77,6 +81,7 @@ export function Dashboard() {
         dispatch(setProducts(loadedProducts));
         dispatch(setExpenses(loadedExpenses));
         dispatch(setEntries(loadedEntries));
+        dispatch(setCustomers(loadedCustomers || []));
       } catch (err) {
         console.error('Dashboard load error:', err);
       }
@@ -108,6 +113,14 @@ export function Dashboard() {
   );
   const outstandingBottles = returnableSummaryToday.totalOutstandingReturnable;
 
+  // Bottles issued and returned today (from bottle transactions)
+  const todaySummary = bottlesService.calculateGlobalSummary(todayTransactions);
+  const bottlesIssuedToday = todaySummary.totalIssued;
+  const bottlesReturnedToday = todaySummary.totalReturned;
+
+  // Total customers
+  const totalCustomers = customers?.length ?? 0;
+
   // Calculate today's expenses (used for Today's Expenses card and for cash in hand)
   const todayExpenses = expenses.filter((expense) => {
     const expenseDate = cashService.formatDate(new Date(expense.createdAt));
@@ -135,18 +148,22 @@ export function Dashboard() {
         <p className="text-gray-600 mt-2">{t('welcome')}</p>
       </div>
 
-      {/* Dashboard Widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Today's Deliveries */}
+      {/* Row 1: Bottles Issued, Bottles Returned, Outstanding Bottles */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <DashboardWidget
-          title={t('todayDeliveries')}
-          value={todayDeliveriesCount}
-          icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          bgColor="bg-blue-500"
+          title={t('bottlesIssuedToday')}
+          value={bottlesIssuedToday}
+          icon="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+          bgColor="bg-cyan-500"
           textColor="text-white"
         />
-
-        {/* Outstanding Bottles */}
+        <DashboardWidget
+          title={t('bottlesReturnedToday')}
+          value={bottlesReturnedToday}
+          icon="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          bgColor="bg-teal-500"
+          textColor="text-white"
+        />
         <DashboardWidget
           title={t('outstandingBottles')}
           value={outstandingBottles}
@@ -154,8 +171,17 @@ export function Dashboard() {
           bgColor="bg-orange-500"
           textColor="text-white"
         />
+      </div>
 
-        {/* Cash on Hand */}
+      {/* Row 2: Total Customers, Cash on Hand, Today's Expenses */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <DashboardWidget
+          title={t('totalCustomers')}
+          value={totalCustomers}
+          icon="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          bgColor="bg-indigo-500"
+          textColor="text-white"
+        />
         <DashboardWidget
           title={t('cashOnHand')}
           value={`Rs. ${cashOnHand.toLocaleString()}`}
@@ -163,8 +189,6 @@ export function Dashboard() {
           bgColor="bg-green-500"
           textColor="text-white"
         />
-
-        {/* Today's Expenses */}
         <DashboardWidget
           title={t('todayExpenses')}
           value={`Rs. ${todayExpensesAmount.toLocaleString()}`}
