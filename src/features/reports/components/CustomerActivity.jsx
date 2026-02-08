@@ -60,7 +60,7 @@ export function CustomerActivity({ customers, orders, products }) {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {t('filterByInactivity')}
         </label>
@@ -113,78 +113,117 @@ export function CustomerActivity({ customers, orders, products }) {
         {t('showingResults')}: {activityData.length} {t('customers')}
       </div>
 
-      {/* Table */}
+      {/* Mobile cards / Desktop table */}
       {activityData.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+        <div className="bg-white rounded-lg shadow p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
           {t('noInactiveCustomers')}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('customer')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('phone')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('lastOrderDate')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('daysSinceLastOrder')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('averageOrderQuantity')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('mostFrequentProduct')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('status')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {activityData.map((report) => (
-                  <tr key={report.customerId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {report.customerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.phone}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.lastOrderDate || t('never')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.daysSinceLastOrder !== null
-                        ? `${report.daysSinceLastOrder} ${t('days')}`
-                        : t('never')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.averageOrderQuantity.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.mostFrequentProduct}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
-                          report.inactivityStatus
-                        )}`}
-                      >
-                        {getStatusLabel(report.inactivityStatus)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          <div className="block sm:hidden space-y-3">
+            {activityData.map((report) => (
+              <div key={report.customerId} className="border border-gray-200 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between items-start gap-2">
+                  <span className="font-medium text-gray-900">{report.customerName}</span>
+                  <span
+                    className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                      report.inactivityStatus
+                    )}`}
+                  >
+                    {getStatusLabel(report.inactivityStatus)}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500">{report.phone}</div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{t('lastOrderDate')}:</span>
+                  <span>{report.lastOrderDate || t('never')}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{t('daysSinceLastOrder')}:</span>
+                  <span>
+                    {report.daysSinceLastOrder !== null
+                      ? `${report.daysSinceLastOrder} ${t('days')}`
+                      : t('never')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>{t('averageOrderQuantity')}:</span>
+                  <span>{report.averageOrderQuantity.toFixed(2)}</span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  <span className="text-gray-500">{t('mostFrequentProduct')}:</span>{' '}
+                  {report.mostFrequentProduct}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+          <div className="hidden sm:block bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('customer')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('phone')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('lastOrderDate')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('daysSinceLastOrder')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('averageOrderQuantity')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('mostFrequentProduct')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('status')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {activityData.map((report) => (
+                    <tr key={report.customerId} className="hover:bg-gray-50">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {report.customerName}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.phone}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.lastOrderDate || t('never')}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.daysSinceLastOrder !== null
+                          ? `${report.daysSinceLastOrder} ${t('days')}`
+                          : t('never')}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.averageOrderQuantity.toFixed(2)}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.mostFrequentProduct}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                            report.inactivityStatus
+                          )}`}
+                        >
+                          {getStatusLabel(report.inactivityStatus)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

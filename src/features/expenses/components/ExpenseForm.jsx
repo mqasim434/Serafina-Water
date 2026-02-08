@@ -77,10 +77,10 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {availableCash !== undefined && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex justify-between items-center">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+          <div className="flex justify-between items-center gap-2">
             <span className="text-sm font-medium text-blue-900">{t('cashOnHand')}:</span>
-            <span className="text-lg font-bold text-blue-900">
+            <span className="text-base sm:text-lg font-bold text-blue-900 truncate">
               Rs. {availableCash.toLocaleString()}
             </span>
           </div>
@@ -158,19 +158,19 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
         <button
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
           {t('cancel')}
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+          className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
         >
           {isLoading ? t('loading') : t('addExpense')}
         </button>

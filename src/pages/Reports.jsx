@@ -293,43 +293,61 @@ export function Reports() {
           products
         );
         return (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('customer')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('issued')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('returned')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('outstanding')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {customerBottles.map((report) => (
-                  <tr key={report.customerId}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {report.customerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.issued}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {report.returned}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-orange-600">
-                      {report.outstanding}
-                    </td>
+          <div>
+            <div className="block sm:hidden space-y-3">
+              {customerBottles.map((report) => (
+                <div key={report.customerId} className="border border-gray-200 rounded-lg p-4 space-y-2">
+                  <div className="font-medium text-gray-900">{report.customerName}</div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{t('issued')}:</span><span>{report.issued}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{t('returned')}:</span><span>{report.returned}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold text-orange-600">
+                    <span>{t('outstanding')}:</span><span>{report.outstanding}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('customer')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('issued')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('returned')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('outstanding')}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {customerBottles.map((report) => (
+                    <tr key={report.customerId}>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {report.customerName}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.issued}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {report.returned}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-orange-600">
+                        {report.outstanding}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
 
@@ -342,19 +360,27 @@ export function Reports() {
         );
         return (
           <div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-lg font-semibold text-blue-900">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+              <p className="text-base sm:text-lg font-semibold text-blue-900">
                 {t('totalOutstanding')}: {outstandingReport.totalOutstanding}
               </p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="block sm:hidden space-y-3">
+              {outstandingReport.customers.map((report) => (
+                <div key={report.customerId} className="border border-gray-200 rounded-lg p-4 flex justify-between items-center">
+                  <span className="font-medium text-gray-900">{report.customerName}</span>
+                  <span className="text-sm font-semibold text-orange-600">{report.outstanding}</span>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('customer')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('outstanding')}
                     </th>
                   </tr>
@@ -362,10 +388,10 @@ export function Reports() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {outstandingReport.customers.map((report) => (
                     <tr key={report.customerId}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {report.customerName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-orange-600">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-orange-600">
                         {report.outstanding}
                       </td>
                     </tr>
@@ -379,43 +405,61 @@ export function Reports() {
       case REPORT_TYPES.DUE_AMOUNTS:
         const dueAmounts = reportsService.generateDueAmountsReport(customers, orders, payments);
         return (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('customer')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('totalOrders')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('totalPayments')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('outstandingBalance')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+          <div>
+            <div className="block sm:hidden space-y-3">
+              {dueAmounts.map((report) => (
+                <div key={report.customerId} className="border border-gray-200 rounded-lg p-4 space-y-2">
+                  <div className="font-medium text-gray-900">{report.customerName}</div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{t('totalOrders')}:</span><span>Rs. {report.totalOrders.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{t('totalPayments')}:</span><span>Rs. {report.totalPayments.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold text-red-600">
+                    <span>{t('outstandingBalance')}:</span><span>Rs. {report.dueAmount.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('customer')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('totalOrders')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('totalPayments')}
+                    </th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {t('outstandingBalance')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {dueAmounts.map((report) => (
                     <tr key={report.customerId}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {report.customerName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         Rs. {report.totalOrders.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         Rs. {report.totalPayments.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
                         Rs. {report.dueAmount.toLocaleString()}
                       </td>
                     </tr>
                   ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
         );
 
@@ -428,43 +472,62 @@ export function Reports() {
         );
         return (
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
                 <p className="text-sm text-green-700">{t('totalIncome')}</p>
-                <p className="text-xl font-bold text-green-900">
+                <p className="text-lg sm:text-xl font-bold text-green-900">
                   Rs. {cashFlowReport.totalIncome.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
                 <p className="text-sm text-red-700">{t('totalExpenses')}</p>
-                <p className="text-xl font-bold text-red-900">
+                <p className="text-lg sm:text-xl font-bold text-red-900">
                   Rs. {cashFlowReport.totalExpenses.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                 <p className="text-sm text-blue-700">{t('netCash')}</p>
-                <p className="text-xl font-bold text-blue-900">
+                <p className="text-lg sm:text-xl font-bold text-blue-900">
                   Rs. {cashFlowReport.netCashFlow.toLocaleString()}
                 </p>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="block sm:hidden space-y-3">
+              {cashFlowReport.entries.map((entry, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-2">
+                  <div className="font-medium text-gray-900">{entry.date}</div>
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>{t('income')}:</span><span>Rs. {entry.income.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-red-600">
+                    <span>{t('expenses')}:</span><span>Rs. {entry.expenses.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-900">
+                    <span>{t('netCash')}:</span><span>Rs. {entry.netCash.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold text-blue-600">
+                    <span>{t('balance')}:</span><span>Rs. {entry.balance.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('date')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('income')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('expenses')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('netCash')}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {t('balance')}
                     </th>
                   </tr>
@@ -472,19 +535,19 @@ export function Reports() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {cashFlowReport.entries.map((entry, index) => (
                     <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {entry.date}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-green-600">
                         Rs. {entry.income.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-red-600">
                         Rs. {entry.expenses.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         Rs. {entry.netCash.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-semibold text-blue-600">
                         Rs. {entry.balance.toLocaleString()}
                       </td>
                     </tr>
@@ -555,7 +618,30 @@ export function Reports() {
                 </p>
               </div>
             )}
-            <div className="overflow-x-auto">
+            <div className="block sm:hidden space-y-3">
+              {profitReport.productBreakdown.length === 0 ? (
+                <p className="py-4 text-center text-gray-500 text-sm">{t('noOrders')}</p>
+              ) : (
+                profitReport.productBreakdown.map((row) => (
+                  <div key={row.productId || row.productName} className="border border-gray-200 rounded-lg p-4 space-y-2">
+                    <div className="font-medium text-gray-900">{row.productName}</div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{t('quantitySold')}:</span><span>{row.quantitySold}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>{t('revenue')}:</span><span>Rs. {row.revenue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-red-600">
+                      <span>{t('cost')}:</span><span>Rs. {row.cost.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold text-blue-600">
+                      <span>{t('profit')}:</span><span>Rs. {row.profit.toLocaleString()}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -598,12 +684,12 @@ export function Reports() {
             <p className="text-sm text-gray-600 mb-4">
               {t('period')}: {periodStart} — {periodEnd}
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-4">
               <p className="text-sm text-blue-700">{t('activatedCustomers')}</p>
-              <p className="text-3xl font-bold text-blue-900">{growthReport.activatedCount}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-900">{growthReport.activatedCount}</p>
             </div>
             {growthReport.comparison && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4">
                 <p className="text-sm font-medium text-amber-900">{t('compareWithLastYear')}</p>
                 <p className="text-sm text-amber-800 mt-1">
                   {t('activatedCustomers')} {growthReport.comparison.activatedCount} · {t('difference')}: {growthReport.comparison.difference >= 0 ? '+' : ''}{growthReport.comparison.difference}
@@ -620,19 +706,19 @@ export function Reports() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('reports')}</h1>
-        <div className="flex gap-3">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('reports')}</h1>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <button
             onClick={handleExportPDF}
-            className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
+            className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
           >
             {t('exportPDF')}
           </button>
           <button
             onClick={handleExportExcel}
-            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+            className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
           >
             {t('exportExcel')}
           </button>
@@ -640,7 +726,7 @@ export function Reports() {
       </div>
 
       {/* Report Type Selection */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {t('selectReport')}
         </label>
@@ -763,7 +849,7 @@ export function Reports() {
       </div>
 
       {/* Report Content */}
-      <div className="bg-white rounded-lg shadow p-6">{renderReportContent()}</div>
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">{renderReportContent()}</div>
     </div>
   );
 }

@@ -40,13 +40,13 @@ export function CustomerBottleBalance({ customerId }) {
 
   return (
     <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">{t('customerBalance')}</h2>
         <p className="text-sm text-gray-600 mt-1">{customer.name}</p>
       </div>
 
-      <div className="p-6">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="p-4 sm:p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           <div className="text-center">
             <p className="text-sm font-medium text-gray-600">{t('issued')}</p>
             <p className="text-2xl font-bold text-blue-600 mt-1">{balance.issued}</p>

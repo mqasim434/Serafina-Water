@@ -263,13 +263,13 @@ export function Products() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">{t('products')}</h1>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-3xl font-bold text-gray-900">{t('products')}</h1>
         {viewMode === VIEW_MODES.LIST && (
           <button
             onClick={handleAdd}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
           >
             {t('addProduct')}
           </button>
@@ -277,7 +277,7 @@ export function Products() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
           {error}
         </div>
       )}
@@ -285,97 +285,148 @@ export function Products() {
       {viewMode === VIEW_MODES.LIST && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {activeProducts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
               <p className="mb-4">{t('noProductsFound')}</p>
               <button
                 onClick={handleAdd}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
               >
                 {t('addProduct')}
               </button>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('name')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('size')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('price')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('stock')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('readyToShip')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('description')}
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('actions')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            <>
+              {/* Mobile card layout */}
+              <div className="block sm:hidden divide-y divide-gray-200">
                 {activeProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {product.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {product.size}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      Rs. {(product.price || 0).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {product.trackStock !== false ? (product.currentStock ?? 0) : '-'}
-                      {product.trackStock !== false && (
-                        <button
-                          type="button"
-                          onClick={() => handleAddStockClick(product)}
-                          className="ml-2 text-blue-600 hover:text-blue-900 text-xs"
-                        >
-                          {t('addStock')}
-                        </button>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {product.trackStock !== false ? (product.readyToShip ?? 0) : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {product.description || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div key={product.id} className="p-4 space-y-2">
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-sm font-medium text-gray-900">{product.name}</span>
+                      <span className="text-sm font-medium text-gray-900 shrink-0">
+                        Rs. {(product.price || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">{product.size}</p>
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                      <span>{t('stock')}: {product.trackStock !== false ? (product.currentStock ?? 0) : '-'}</span>
+                      <span>{t('readyToShip')}: {product.trackStock !== false ? (product.readyToShip ?? 0) : '-'}</span>
+                    </div>
+                    {product.trackStock !== false && (
                       <button
+                        type="button"
+                        onClick={() => handleAddStockClick(product)}
+                        className="text-blue-600 hover:text-blue-900 text-xs font-medium"
+                      >
+                        {t('addStock')}
+                      </button>
+                    )}
+                    {product.description ? (
+                      <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
+                    ) : null}
+                    <div className="flex gap-3 pt-2 border-t border-gray-100">
+                      <button
+                        type="button"
                         onClick={() => handleEdit(product)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        className="flex-1 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded border border-blue-200"
                       >
                         {t('edit')}
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDelete(product.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="flex-1 py-2 text-red-600 hover:bg-red-50 font-medium text-sm rounded border border-red-200"
                       >
                         {t('delete')}
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('name')}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('size')}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('price')}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('stock')}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('readyToShip')}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('description')}
+                      </th>
+                      <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t('actions')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {activeProducts.map((product) => (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {product.name}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {product.size}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          Rs. {(product.price || 0).toLocaleString()}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {product.trackStock !== false ? (product.currentStock ?? 0) : '-'}
+                          {product.trackStock !== false && (
+                            <button
+                              type="button"
+                              onClick={() => handleAddStockClick(product)}
+                              className="ml-2 text-blue-600 hover:text-blue-900 text-xs"
+                            >
+                              {t('addStock')}
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {product.trackStock !== false ? (product.readyToShip ?? 0) : '-'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-sm text-gray-500">
+                          {product.description || '-'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="text-blue-600 hover:text-blue-900 mr-4"
+                          >
+                            {t('edit')}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            {t('delete')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {(viewMode === VIEW_MODES.ADD || viewMode === VIEW_MODES.EDIT) && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">
             {editingProduct ? t('editProduct') : t('addProduct')}
           </h2>
 
@@ -574,19 +625,19 @@ export function Products() {
               </>
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
               <button
                 type="button"
                 onClick={handleCancel}
                 disabled={isLoading}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 {t('cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 {isLoading ? t('loading') : t('save')}
               </button>
@@ -597,9 +648,9 @@ export function Products() {
 
       {/* Add Stock Modal (Admin only) */}
       {showAddStock && addStockProduct && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('addStock')}</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-4 sm:p-6 my-4">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">{t('addStock')}</h3>
             <p className="text-sm text-gray-600 mb-4">
               {addStockProduct.name} ({addStockProduct.size}) — {t('currentStock')}: {addStockProduct.currentStock ?? 0}
             </p>
@@ -620,18 +671,18 @@ export function Products() {
               {addStockError && (
                 <p className="text-sm text-red-600 mb-3">{addStockError}</p>
               )}
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => { setShowAddStock(false); setAddStockProduct(null); setAddStockQty(''); setAddStockError(''); }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
                 >
                   {t('save')}
                 </button>

@@ -34,7 +34,7 @@ export function TransactionHistory({ customerId }) {
 
   return (
     <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">{t('transactionHistory')}</h2>
       </div>
 
@@ -43,7 +43,7 @@ export function TransactionHistory({ customerId }) {
           <div className="p-8 text-center text-gray-500">{t('noTransactions')}</div>
         ) : (
           displayTransactions.map((transaction) => (
-            <div key={transaction.id} className="p-4 hover:bg-gray-50">
+            <div key={transaction.id} className="p-3 sm:p-4 hover:bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   {!customerId && (
@@ -51,7 +51,7 @@ export function TransactionHistory({ customerId }) {
                       {getCustomerName(transaction.customerId)}
                     </p>
                   )}
-                  <div className="mt-1 flex items-center gap-4">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         transaction.type === 'issued'

@@ -226,8 +226,8 @@ export function Bottles() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('placeOrders')}</h1>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('placeOrders')}</h1>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -238,7 +238,7 @@ export function Bottles() {
       {/* Success Notification */}
       {showSuccessMessage && (
         <div 
-          className="fixed top-20 right-4 z-[9999] bg-green-500 border-2 border-green-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 min-w-[320px] max-w-md animate-slide-in"
+          className="fixed top-20 left-4 right-4 sm:left-auto sm:right-4 sm:min-w-[320px] sm:max-w-md z-[9999] bg-green-500 border-2 border-green-600 text-white px-4 sm:px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-in"
           style={{ zIndex: 9999 }}
         >
           <svg
@@ -294,9 +294,9 @@ export function Bottles() {
         </div>
       )} */}
 
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('placeOrder')}</h2>
 
             <div className="mb-4">
@@ -335,12 +335,56 @@ export function Bottles() {
         </div>
 
         {/* Recent Orders - Mark as Ready */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('recentOrders')}</h2>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t('recentOrders')}</h2>
           {orders.length === 0 ? (
             <p className="text-gray-500 text-sm">{t('noOrders')}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              {/* Mobile card layout */}
+              <div className="block sm:hidden space-y-3">
+                {[...orders]
+                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                  .slice(0, 25)
+                  .map((order) => {
+                    const customer = customers.find((c) => c.id === order.customerId);
+                    const lineItems = ordersService.getOrderLineItems(order);
+                    const totalQty = ordersService.getOrderTotalQuantity(order);
+                    const productSummary = lineItems
+                      .map((item) => {
+                        const p = products.find((pr) => pr.id === item.productId);
+                        return p ? `${p.name} (${p.size}) × ${item.quantity}` : null;
+                      })
+                      .filter(Boolean)
+                      .join(', ') || '-';
+                    const status = ordersService.getDeliveryStatus(order);
+                    const statusLabel = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                    const statusStyle = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                    return (
+                      <div key={order.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <span className="font-medium text-gray-900">{order.orderNumber ?? order.id}</span>
+                          <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusStyle}`}>{statusLabel}</span>
+                        </div>
+                        <p className="text-sm text-gray-600">{customer?.name ?? order.customerId}</p>
+                        <p className="text-xs text-gray-500">{productSummary}</p>
+                        <p className="text-xs text-gray-500">{t('quantity')}: {totalQty}</p>
+                        {status === 'pending' && (
+                          <button
+                            type="button"
+                            onClick={() => handleMarkReady(order.id)}
+                            disabled={isLoading}
+                            className="w-full mt-2 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded disabled:opacity-50"
+                          >
+                            {t('markReady')}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50">
                   <tr>
@@ -402,7 +446,8 @@ export function Bottles() {
                     })}
                 </tbody>
               </table>
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>

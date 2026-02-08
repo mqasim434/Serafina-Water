@@ -95,13 +95,13 @@ export function WaterQuality() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('waterQuality')}</h1>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('waterQuality')}</h1>
         {viewMode === VIEW_MODES.LIST && (
           <button
             onClick={handleAdd}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             {t('addEntry')}
           </button>
@@ -109,14 +109,14 @@ export function WaterQuality() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
           {error}
         </div>
       )}
 
       {viewMode === VIEW_MODES.ADD && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('addWaterQualityEntry')}</h2>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t('addWaterQualityEntry')}</h2>
           <WaterQualityForm
             onSubmit={handleSubmit}
             onCancel={handleCancel}
@@ -127,7 +127,7 @@ export function WaterQuality() {
 
       {viewMode === VIEW_MODES.LIST && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('waterQualityHistory')}</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t('waterQualityHistory')}</h2>
           <WaterQualityList />
         </div>
       )}
