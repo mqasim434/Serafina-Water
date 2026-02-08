@@ -167,7 +167,9 @@ export function validateOrder(data) {
     if (!item.quantity || item.quantity <= 0) {
       return { isValid: false, error: `Quantity must be greater than 0 for item ${i + 1}` };
     }
-    if (item.price === undefined || item.price === null || item.price === '' || item.price < 0) {
+    const priceNum = Number(item.price);
+    const hasValidPrice = (item.price === 0 || item.price === '0') || (item.price != null && item.price !== '' && Number.isFinite(priceNum) && priceNum >= 0);
+    if (!hasValidPrice) {
       return { isValid: false, error: `Price is required for item ${i + 1}` };
     }
   }
@@ -207,15 +209,30 @@ export async function createOrder(
   createdBy,
   existingProducts = []
 ) {
+  // Normalize items: always resolve price from product (fixes free items like dispenser where form may pass empty/undefined)
+  const useItems = data.items && data.items.length > 0;
+  const normalizedData = useItems
+    ? {
+        ...data,
+        items: data.items.map((item) => {
+          const product = existingProducts.find((p) => p.id === item.productId);
+          const priceNum = Number(item.price);
+          const fromItemValid = (item.price === 0 || item.price === '0' || (Number.isFinite(priceNum) && priceNum >= 0));
+          const fromProduct = product != null ? (product.price ?? 0) : 0;
+          const resolvedPrice = fromItemValid ? priceNum : fromProduct;
+          return { ...item, price: Number.isFinite(resolvedPrice) ? resolvedPrice : 0 };
+        }),
+      }
+    : data;
+
   // Validate order
-  const validation = validateOrder(data);
+  const validation = validateOrder(normalizedData);
   if (!validation.isValid) {
     throw new Error(validation.error);
   }
 
-  const useItems = data.items && data.items.length > 0;
   const lineItems = useItems
-    ? data.items.map((item) => {
+    ? (normalizedData.items || data.items).map((item) => {
         const product = existingProducts.find((p) => p.id === item.productId);
         const costPriceAtSale = product ? (product.costPrice ?? 0) : 0;
         return {

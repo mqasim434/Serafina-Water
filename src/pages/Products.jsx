@@ -40,6 +40,7 @@ export function Products() {
     isReturnable: true,
     trackStock: true,
     lowStockThreshold: 0,
+    freeItem: false,
   });
   const [formErrors, setFormErrors] = useState({});
   const [showAddStock, setShowAddStock] = useState(false);
@@ -78,6 +79,7 @@ export function Products() {
       isReturnable: true,
       trackStock: true,
       lowStockThreshold: 0,
+      freeItem: false,
     });
     setFormErrors({});
     setViewMode(VIEW_MODES.ADD);
@@ -85,16 +87,18 @@ export function Products() {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
+    const isFree = (product.price === 0 || product.price === '0');
     setFormData({
       name: product.name,
       size: product.size,
       description: product.description || '',
-      price: product.price || '',
+      price: isFree ? '0' : ((product.price !== undefined && product.price !== null) ? String(product.price) : ''),
       costPrice: product.costPrice ?? '',
       isActive: product.isActive,
       isReturnable: product.isReturnable !== undefined ? product.isReturnable : true,
       trackStock: product.trackStock !== undefined ? product.trackStock : true,
       lowStockThreshold: product.lowStockThreshold ?? 0,
+      freeItem: isFree,
     });
     setFormErrors({});
     setViewMode(VIEW_MODES.EDIT);
@@ -157,10 +161,12 @@ export function Products() {
     if (!formData.size.trim()) {
       newErrors.size = 'Size is required';
     }
-    if (!formData.price || formData.price === '') {
+    const priceVal = parseFloat(formData.price);
+    if (formData.freeItem) {
+      // Free item: price is 0, no validation needed
+    } else if (formData.price === '' || formData.price === undefined || formData.price === null) {
       newErrors.price = 'Price is required';
-    }
-    if (formData.price && (isNaN(formData.price) || parseFloat(formData.price) < 0)) {
+    } else if (isNaN(priceVal) || priceVal < 0) {
       newErrors.price = 'Price must be a non-negative number';
     }
     if (formData.costPrice === '' || formData.costPrice === undefined || formData.costPrice === null) {
@@ -187,15 +193,19 @@ export function Products() {
     dispatch(setError(null));
 
     try {
+      const submitData = {
+        ...formData,
+        price: formData.freeItem ? 0 : formData.price,
+      };
       if (editingProduct) {
         const updated = await productsService.updateProduct(
           editingProduct.id,
-          formData,
+          submitData,
           products
         );
         dispatch(updateProductInState(updated));
       } else {
-        const newProduct = await productsService.createProduct(formData, products);
+        const newProduct = await productsService.createProduct(submitData, products);
         dispatch(addProduct(newProduct));
       }
 
@@ -211,6 +221,7 @@ export function Products() {
         isReturnable: true,
         trackStock: true,
         lowStockThreshold: 0,
+        freeItem: false,
       });
       setFormErrors({});
     } catch (err) {
@@ -233,6 +244,7 @@ export function Products() {
       isReturnable: true,
       trackStock: true,
       lowStockThreshold: 0,
+      freeItem: false,
     });
     setFormErrors({});
   };
@@ -420,9 +432,28 @@ export function Products() {
               />
             </div>
 
+            <div className="flex items-center mb-2">
+              <input
+                id="freeItem"
+                type="checkbox"
+                checked={formData.freeItem}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setFormData({
+                    ...formData,
+                    freeItem: checked,
+                    price: checked ? '0' : formData.price,
+                  });
+                }}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="freeItem" className="ml-2 block text-sm text-gray-900">
+                {t('freeItem') || 'Free item'}
+              </label>
+            </div>
             <div>
               <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                {t('price')} (Rs.) <span className="text-red-500">*</span>
+                {t('price')} (Rs.) {!formData.freeItem && <span className="text-red-500">*</span>}
               </label>
               <input
                 type="number"
@@ -430,10 +461,11 @@ export function Products() {
                 min="0"
                 step="0.01"
                 value={formData.price}
+                disabled={formData.freeItem}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                   formErrors.price ? 'border-red-300' : 'border-gray-300'
-                }`}
+                } ${formData.freeItem ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder="0.00"
               />
               {formErrors.price && (

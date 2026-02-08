@@ -35,7 +35,8 @@ export function validateProduct(data) {
     return { isValid: false, error: 'Product price is required' };
   }
 
-  if (isNaN(data.price) || parseFloat(data.price) < 0) {
+  const priceNum = parseFloat(data.price);
+  if (isNaN(priceNum) || priceNum < 0) {
     return { isValid: false, error: 'Product price must be a non-negative number' };
   }
 
@@ -108,7 +109,7 @@ export async function createProduct(data, existingProducts) {
     name: data.name.trim(),
     size: data.size.trim(),
     description: (data.description || '').trim(),
-    price: parseFloat(data.price) || 0,
+    price: (() => { const p = parseFloat(data.price); return !isNaN(p) && p >= 0 ? p : 0; })(),
     costPrice: data.costPrice !== undefined && data.costPrice !== '' ? parseFloat(data.costPrice) : 0,
     isActive: data.isActive !== undefined ? data.isActive : true,
     isReturnable: data.isReturnable !== undefined ? data.isReturnable : true,
@@ -158,7 +159,7 @@ export async function updateProduct(id, data, existingProducts) {
     name: data.name.trim(),
     size: data.size.trim(),
     description: (data.description || '').trim(),
-    price: parseFloat(data.price) || existing.price || 0,
+    price: (() => { const p = parseFloat(data.price); return !isNaN(p) && p >= 0 ? p : (existing.price ?? 0); })(),
     costPrice: data.costPrice !== undefined && data.costPrice !== '' ? parseFloat(data.costPrice) : (existing.costPrice ?? 0),
     isActive: data.isActive !== undefined ? data.isActive : true,
     isReturnable: data.isReturnable !== undefined ? data.isReturnable : (existing.isReturnable !== undefined ? existing.isReturnable : true),

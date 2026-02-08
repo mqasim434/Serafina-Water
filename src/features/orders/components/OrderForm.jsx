@@ -123,13 +123,18 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
         newErrors[`item_${item.id}`] = t('product') + ' ' + (t('required') || 'is required');
         return;
       }
+      const product = orderableProducts.find((p) => p.id === item.productId);
       const qty = parseFloat(item.quantity);
-      const pr = parseFloat(item.price);
+      let pr = parseFloat(item.price);
+      // Resolve price from product when empty or invalid (e.g. dispenser with price 0)
+      if ((item.price === '' || item.price === undefined || item.price === null || isNaN(pr) || pr < 0) && product) {
+        pr = customer?.productPrices?.[product.id] ?? product.price ?? 0;
+      }
       if (!item.quantity || qty <= 0) {
         newErrors[`item_${item.id}`] = t('quantity') + ' ' + (t('required') || 'must be > 0');
         return;
       }
-      if (item.price === '' || item.price === undefined || isNaN(pr) || pr < 0) {
+      if (isNaN(pr) || pr < 0) {
         newErrors[`item_${item.id}`] = t('price') + ' ' + (t('required') || 'is required');
         return;
       }
@@ -244,17 +249,22 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-0.5">
-                  {t('price')} (Rs.) <span className="text-red-500">*</span>
+                  {t('price')} (Rs.) {(() => {
+                    const product = orderableProducts.find((p) => p.id === item.productId);
+                    const isFree = product && (product.price === 0 || product.price === '0');
+                    return !isFree && <span className="text-red-500">*</span>;
+                  })()}
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   value={item.price}
+                  readOnly={!!item.productId}
                   onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
                   className={`block w-full px-2 py-1.5 border rounded text-sm focus:ring-blue-500 focus:border-blue-500 ${
                     errors[`item_${item.id}`] ? 'border-red-300' : 'border-gray-300'
-                  }`}
+                  } ${item.productId ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="0.00"
                 />
               </div>
