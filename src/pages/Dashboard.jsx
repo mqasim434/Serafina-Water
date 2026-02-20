@@ -6,6 +6,7 @@
 
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 import * as cashService from '../features/cash/service.js';
 import { bottlesService, setTransactions } from '../features/bottles/slice.js';
@@ -15,6 +16,9 @@ import { formatTime12h } from '../features/waterQuality/service.js';
 import { ordersService, setOrders, setCashBalance } from '../features/orders/slice.js';
 import { productsService, setProducts } from '../features/products/slice.js';
 import { customersService, setCustomers } from '../features/customers/slice.js';
+import { maintenanceService, setTasks, setEquipmentHistory, setCertificateRenewals } from '../features/maintenance/slice.js';
+import { payrollService, setEmployees, setPaymentsFull } from '../features/payroll/slice.js';
+import { isAdmin } from '../features/auth/service.js';
 
 /**
  * Dashboard Widget Component
@@ -53,20 +57,15 @@ export function Dashboard() {
   const { cashBalance } = useSelector((state) => state.orders);
   const { items: waterQualityEntries } = useSelector((state) => state.waterQuality);
   const { items: customers } = useSelector((state) => state.customers);
+  const { user } = useSelector((state) => state.auth);
+  const { tasks: maintenanceTasks } = useSelector((state) => state.maintenance);
+  const { employees: payrollEmployees } = useSelector((state) => state.payroll);
 
   // Load all dashboard data on mount so cards reflect real-time data
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [
-          loadedOrders,
-          loadedCashBalance,
-          loadedTransactions,
-          loadedProducts,
-          loadedExpenses,
-          loadedEntries,
-          loadedCustomers,
-        ] = await Promise.all([
+        const loadPromises = [
           ordersService.loadOrders(),
           ordersService.loadCashBalance(),
           bottlesService.loadTransactions(),
@@ -74,20 +73,37 @@ export function Dashboard() {
           expensesService.loadExpenses(),
           waterQualityService.loadWaterQualityEntries(),
           customersService.loadCustomers(),
-        ]);
-        dispatch(setOrders(loadedOrders));
-        dispatch(setCashBalance(loadedCashBalance));
-        dispatch(setTransactions(loadedTransactions));
-        dispatch(setProducts(loadedProducts));
-        dispatch(setExpenses(loadedExpenses));
-        dispatch(setEntries(loadedEntries));
-        dispatch(setCustomers(loadedCustomers || []));
+        ];
+        if (isAdmin(user)) {
+          loadPromises.push(
+            maintenanceService.loadTasks(),
+            maintenanceService.loadEquipmentHistory(),
+            maintenanceService.loadCertificateRenewals(),
+            payrollService.loadEmployees(),
+            payrollService.loadPayments()
+          );
+        }
+        const results = await Promise.all(loadPromises);
+        dispatch(setOrders(results[0]));
+        dispatch(setCashBalance(results[1]));
+        dispatch(setTransactions(results[2]));
+        dispatch(setProducts(results[3]));
+        dispatch(setExpenses(results[4]));
+        dispatch(setEntries(results[5]));
+        dispatch(setCustomers(results[6] || []));
+        if (isAdmin(user) && results.length > 7) {
+          dispatch(setTasks(results[7]));
+          dispatch(setEquipmentHistory(results[8]));
+          dispatch(setCertificateRenewals(results[9]));
+          dispatch(setEmployees(results[10]));
+          dispatch(setPaymentsFull(results[11]));
+        }
       } catch (err) {
         console.error('Dashboard load error:', err);
       }
     }
     loadDashboardData();
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   // Calculate today's deliveries (today's orders)
   const today = cashService.getTodayDate();
@@ -261,6 +277,77 @@ export function Dashboard() {
               </svg>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Maintenance Reminders (Admin only) */}
+      {isAdmin(user) && (maintenanceTasks?.length > 0 || payrollEmployees?.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(maintenanceTasks?.length > 0) && (
+            <>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <h3 className="font-semibold text-amber-900 mb-2">{t('maintenanceDueToday')}</h3>
+                {maintenanceService.getMaintenanceDueTodayOrOverdue(maintenanceTasks, today).length === 0 ? (
+                  <p className="text-sm text-amber-800">{t('noDeliveriesToday')}</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {maintenanceService.getMaintenanceDueTodayOrOverdue(maintenanceTasks, today).map((t) => (
+                      <li key={t.id} className="flex justify-between text-sm">
+                        <span>{t.itemName}</span>
+                        <Link to="/maintenance" className="text-blue-600 font-medium">{t('markDone')}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">{t('certificatesExpiringSoon')}</h3>
+                {maintenanceService.getCertificatesExpiringSoon(maintenanceTasks, today).length === 0 &&
+                 maintenanceService.getCertificatesExpired(maintenanceTasks, today).length === 0 ? (
+                  <p className="text-sm text-blue-800">None</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {maintenanceService.getCertificatesExpiringSoon(maintenanceTasks, today).map((t) => (
+                      <li key={t.id} className="flex justify-between text-sm">
+                        <span>{t.documentName} — {t.expiryDate}</span>
+                        <Link to="/maintenance" className="text-blue-600 font-medium">{t('markRenewed')}</Link>
+                      </li>
+                    ))}
+                    {maintenanceService.getCertificatesExpired(maintenanceTasks, today).map((t) => (
+                      <li key={t.id} className="flex justify-between text-sm text-red-700">
+                        <span>{t.documentName} — {t.expiryDate} (Expired)</span>
+                        <Link to="/maintenance" className="text-blue-600 font-medium">{t('markRenewed')}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+          {payrollEmployees?.length > 0 && (
+            <div className={`bg-green-50 border border-green-200 rounded-lg p-4 ${maintenanceTasks?.length > 0 ? 'md:col-span-2' : ''}`}>
+              <h3 className="font-semibold text-green-900 mb-2">{t('payroll')} — {t('payDueToday')} / {t('payDueSoon')}</h3>
+              {payrollService.getPayDueToday(payrollEmployees, today).length === 0 &&
+               payrollService.getPayDueSoon(payrollEmployees, today).length === 0 ? (
+                <p className="text-sm text-green-800">None due</p>
+              ) : (
+                <ul className="space-y-1">
+                  {payrollService.getPayDueToday(payrollEmployees, today).map((e) => (
+                    <li key={e.id} className="flex justify-between text-sm">
+                      <span className="font-medium">{e.name} — Rs. {(e.payAmount || 0).toLocaleString()} ({t('payDueToday')})</span>
+                      <Link to="/payroll" className="text-blue-600 font-medium">{t('markPaid')}</Link>
+                    </li>
+                  ))}
+                  {payrollService.getPayDueSoon(payrollEmployees, today).map((e) => (
+                    <li key={e.id} className="flex justify-between text-sm">
+                      <span>{e.name} — {e.nextPayDate} — Rs. {(e.payAmount || 0).toLocaleString()}</span>
+                      <Link to="/payroll" className="text-blue-600 font-medium">{t('markPaid')}</Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 

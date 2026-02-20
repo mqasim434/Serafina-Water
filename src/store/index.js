@@ -14,6 +14,8 @@ import paymentsReducer from '../features/payments/slice.js';
 import expensesReducer from '../features/expenses/slice.js';
 import settingsReducer from '../features/settings/slice.js';
 import waterQualityReducer from '../features/waterQuality/slice.js';
+import maintenanceReducer from '../features/maintenance/slice.js';
+import payrollReducer from '../features/payroll/slice.js';
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +30,8 @@ export const store = configureStore({
     expenses: expensesReducer,
     settings: settingsReducer,
     waterQuality: waterQualityReducer,
+    maintenance: maintenanceReducer,
+    payroll: payrollReducer,
   },
 });
 

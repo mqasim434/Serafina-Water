@@ -24,6 +24,8 @@ import { Settings } from './pages/Settings.jsx';
 import { WaterQuality } from './pages/WaterQuality.jsx';
 import { Stock } from './pages/Stock.jsx';
 import { Deliveries } from './pages/Deliveries.jsx';
+import { Maintenance } from './pages/Maintenance.jsx';
+import { Payroll } from './pages/Payroll.jsx';
 import { setUser, setToken, setLoading } from './features/auth/slice.js';
 import { getCurrentAuthUser, loadToken } from './features/auth/service.js';
 import { setLanguage } from './features/i18n/slice.js';
@@ -173,6 +175,26 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Stock />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/maintenance"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <Layout>
+              <Maintenance />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <Layout>
+              <Payroll />
             </Layout>
           </ProtectedRoute>
         }

@@ -29,6 +29,8 @@ function getMenuItems(isAdminUser) {
 
   if (isAdminUser) {
     items.push(
+      { path: '/maintenance', label: 'maintenance', adminOnly: true },
+      { path: '/payroll', label: 'payroll', adminOnly: true },
       { path: '/products', label: 'products', adminOnly: true },
       { path: '/users', label: 'users', adminOnly: true },
       { path: '/reports', label: 'reports', adminOnly: true },
@@ -58,7 +60,7 @@ export function Sidebar({ isOpen, onClose }) {
 
   return (
     <aside
-      className={`bg-white border-r border-gray-200 w-64 min-h-screen fixed left-0 top-16 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      className={`bg-white border-r border-gray-200 w-64 h-[calc(100vh-4rem)] fixed left-0 top-16 z-30 transform transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-y-auto ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}
     >
