@@ -12,7 +12,6 @@ import {
   setProducts,
   addProduct,
   updateProductInState,
-  removeProduct,
   setError,
   productsService,
 } from '../features/products/slice.js';
@@ -133,16 +132,31 @@ export function Products() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
+  const handleDeactivate = async (id) => {
+    if (!window.confirm(t('confirmDeactivateProduct'))) {
       return;
     }
 
     dispatch(setLoading(true));
     try {
-      const currentProducts = products;
-      await productsService.deleteProduct(id, currentProducts);
-      dispatch(removeProduct(id));
+      const updated = await productsService.deactivateProduct(id, products);
+      dispatch(updateProductInState(updated));
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+  const handleActivate = async (id) => {
+    if (!window.confirm(t('confirmActivateProduct'))) {
+      return;
+    }
+
+    dispatch(setLoading(true));
+    try {
+      const updated = await productsService.activateProduct(id, products);
+      dispatch(updateProductInState(updated));
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
@@ -250,6 +264,7 @@ export function Products() {
   };
 
   const activeProducts = productsService.getActiveProducts(products);
+  const inactiveProducts = productsService.getInactiveProducts(products);
 
   if (isLoading && products.length === 0) {
     return (
@@ -284,7 +299,7 @@ export function Products() {
 
       {viewMode === VIEW_MODES.LIST && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {activeProducts.length === 0 ? (
+          {activeProducts.length === 0 && inactiveProducts.length === 0 ? (
             <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
               <p className="mb-4">{t('noProductsFound')}</p>
               <button
@@ -296,6 +311,9 @@ export function Products() {
             </div>
           ) : (
             <>
+              {/* Active products */}
+              {activeProducts.length > 0 && (
+                <>
               {/* Mobile card layout */}
               <div className="block sm:hidden divide-y divide-gray-200">
                 {activeProducts.map((product) => (
@@ -333,10 +351,10 @@ export function Products() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(product.id)}
-                        className="flex-1 py-2 text-red-600 hover:bg-red-50 font-medium text-sm rounded border border-red-200"
+                        onClick={() => handleDeactivate(product.id)}
+                        className="flex-1 py-2 text-amber-600 hover:bg-amber-50 font-medium text-sm rounded border border-amber-200"
                       >
-                        {t('delete')}
+                        {t('deactivate')}
                       </button>
                     </div>
                   </div>
@@ -408,10 +426,10 @@ export function Products() {
                             {t('edit')}
                           </button>
                           <button
-                            onClick={() => handleDelete(product.id)}
-                            className="text-red-600 hover:text-red-900"
+                            onClick={() => handleDeactivate(product.id)}
+                            className="text-amber-600 hover:text-amber-900"
                           >
-                            {t('delete')}
+                            {t('deactivate')}
                           </button>
                         </td>
                       </tr>
@@ -419,6 +437,97 @@ export function Products() {
                   </tbody>
                 </table>
               </div>
+                </>
+              )}
+
+              {/* Deactivated products section */}
+              {inactiveProducts.length > 0 && (
+                <div className="mt-6 border-t border-gray-200 pt-4">
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3 px-4 sm:px-6">
+                    {t('deactivatedProducts')}
+                  </h3>
+                  {/* Mobile: deactivated cards */}
+                  <div className="block sm:hidden divide-y divide-gray-200">
+                    {inactiveProducts.map((product) => (
+                      <div key={product.id} className="p-4 space-y-2 bg-gray-50">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-sm font-medium text-gray-600">{product.name}</span>
+                          <span className="text-sm font-medium text-gray-600 shrink-0">
+                            Rs. {(product.price || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">{product.size}</p>
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(product)}
+                            className="flex-1 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded border border-blue-200"
+                          >
+                            {t('edit')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleActivate(product.id)}
+                            className="flex-1 py-2 text-green-600 hover:bg-green-50 font-medium text-sm rounded border border-green-200"
+                          >
+                            {t('activate')}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Desktop: deactivated table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('name')}
+                          </th>
+                          <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('size')}
+                          </th>
+                          <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('price')}
+                          </th>
+                          <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {t('actions')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-gray-50 divide-y divide-gray-200">
+                        {inactiveProducts.map((product) => (
+                          <tr key={product.id} className="hover:bg-gray-100">
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-600">
+                              {product.name}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {product.size}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              Rs. {(product.price || 0).toLocaleString()}
+                            </td>
+                            <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <button
+                                onClick={() => handleEdit(product)}
+                                className="text-blue-600 hover:text-blue-900 mr-4"
+                              >
+                                {t('edit')}
+                              </button>
+                              <button
+                                onClick={() => handleActivate(product.id)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                {t('activate')}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

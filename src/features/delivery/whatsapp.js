@@ -4,6 +4,7 @@
  */
 
 import { getOrderLineItems } from '../orders/service.js';
+import { shortenUrl } from './urlShortener.js';
 
 /**
  * Format phone number for WhatsApp (digits only, with country code).
@@ -107,20 +108,22 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
 }
 
 /**
- * Open WhatsApp with order summary to customer's phone
+ * Open WhatsApp with order summary to customer's phone.
+ * Shortens the delivery proof image URL when present to keep the message and wa.me link within limits.
  * @param {Object} order - Order object
  * @param {Object} customer - Customer object
  * @param {import('../products/types.js').Product[]} products - Products array
  * @param {number} [amountPaid] - Amount paid on delivery
  * @param {number} [outstandingAmount] - Outstanding amount for this order (before payment)
- * @param {string} [deliveryProofPhotoUrl] - URL of delivery proof photo (included as clickable link)
- * @returns {boolean} True if WhatsApp was opened, false if no valid phone
+ * @param {string} [deliveryProofPhotoUrl] - URL of delivery proof photo (shortened before inclusion)
+ * @returns {Promise<boolean>} True if WhatsApp was opened, false if no valid phone
  */
-export function openWhatsAppWithOrderSummary(order, customer, products, amountPaid = 0, outstandingAmount, deliveryProofPhotoUrl) {
+export async function openWhatsAppWithOrderSummary(order, customer, products, amountPaid = 0, outstandingAmount, deliveryProofPhotoUrl) {
   const phone = formatPhoneForWhatsApp(customer?.phone);
   if (!phone) return false;
 
-  const message = buildOrderSummaryForWhatsApp(order, customer, products, amountPaid, outstandingAmount, deliveryProofPhotoUrl);
+  const photoUrlToUse = deliveryProofPhotoUrl ? await shortenUrl(deliveryProofPhotoUrl) : deliveryProofPhotoUrl;
+  const message = buildOrderSummaryForWhatsApp(order, customer, products, amountPaid, outstandingAmount, photoUrlToUse);
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;

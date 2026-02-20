@@ -21,7 +21,7 @@ import * as cashService from '../../cash/service.js';
 /**
  * Single transaction row (expandable)
  */
-function TransactionRow({ transaction, getCustomerName, products, isExpanded, onToggle }) {
+function TransactionRow({ transaction, getCustomerName, getUserName, products, isExpanded, onToggle }) {
   const { t } = useTranslation();
   const product = transaction.productId && products?.length
     ? products.find((p) => p.id === transaction.productId)
@@ -137,7 +137,9 @@ function TransactionRow({ transaction, getCustomerName, products, isExpanded, on
             {transaction.createdBy && (
               <div>
                 <dt className="text-gray-500">{t('createdBy')}</dt>
-                <dd className="text-gray-900">{transaction.createdBy}</dd>
+                <dd className="text-gray-900">
+                  {getUserName ? getUserName(transaction.createdBy) : transaction.createdBy}
+                </dd>
               </div>
             )}
           </dl>
@@ -156,6 +158,7 @@ export function TransactionHistory({ customerId }) {
   const { transactions } = useSelector((state) => state.bottles);
   const { items: customers } = useSelector((state) => state.customers);
   const { items: products } = useSelector((state) => state.products);
+  const { items: users } = useSelector((state) => state.users);
   const [expandedId, setExpandedId] = useState(null);
   const [showAllView, setShowAllView] = useState(false);
   const [rangeStart, setRangeStart] = useState(() => {
@@ -191,6 +194,13 @@ export function TransactionHistory({ customerId }) {
   const getCustomerName = (id) => {
     const customer = customers.find((c) => c.id === id);
     return customer ? customer.name : 'Unknown';
+  };
+
+  const getUserName = (id) => {
+    const user = users?.find((u) => u.id === id);
+    if (!user) return id;
+    const name = user.displayName || user.username;
+    return name || (user.role ? t(user.role) : id);
   };
 
   const handleToggleExpand = (id) => {
@@ -276,6 +286,7 @@ export function TransactionHistory({ customerId }) {
               key={transaction.id}
               transaction={transaction}
               getCustomerName={customerId ? null : getCustomerName}
+              getUserName={getUserName}
               products={products}
               isExpanded={expandedId === transaction.id}
               onToggle={() => handleToggleExpand(transaction.id)}

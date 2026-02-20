@@ -7,6 +7,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setUser, setToken, setError, setLoading } from '../features/auth/slice.js';
 import { signIn } from '../features/auth/service.js';
+import { setUsers } from '../features/users/slice.js';
+import { usersService } from '../features/users/slice.js';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 
 export function Login() {
@@ -29,7 +31,15 @@ export function Login() {
       // Update Redux state
       dispatch(setUser(user));
       dispatch(setToken(token));
-      
+
+      // Load users so "Created by" can show names in transaction details
+      try {
+        const loadedUsers = await usersService.loadUsers();
+        dispatch(setUsers(loadedUsers));
+      } catch (e) {
+        console.warn('Could not load users:', e);
+      }
+
       // Navigate to dashboard
       navigate('/');
     } catch (err) {

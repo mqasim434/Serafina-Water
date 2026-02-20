@@ -116,7 +116,7 @@ export function Deliveries() {
           lastUpdated: new Date().toISOString(),
         }));
       }
-      openWhatsAppWithOrderSummary(
+      await openWhatsAppWithOrderSummary(
         selectedOrder,
         selectedCustomer,
         products,

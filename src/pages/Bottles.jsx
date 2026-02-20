@@ -124,6 +124,9 @@ export function Bottles() {
         dispatch(addPayment(result.payment));
       }
       dispatch(setCashBalance(result.newCashBalance));
+      if (result.products && result.products.length > 0) {
+        dispatch(setProducts(result.products));
+      }
 
       // Update customer hasDispenser: if order contains dispenser product → true; else use manual checkbox
       const orderItems = result.order.items || (result.order.productId ? [{ productId: result.order.productId }] : []);

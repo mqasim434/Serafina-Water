@@ -178,25 +178,59 @@ export async function updateProduct(id, data, existingProducts) {
 }
 
 /**
- * Delete a product (soft delete - set isActive to false)
+ * Set product active status (deactivate or activate)
  * @param {string} id - Product ID
+ * @param {boolean} isActive - New active status
  * @param {import('./types.js').Product[]} existingProducts - Existing products array
- * @returns {Promise<void>}
+ * @returns {Promise<import('./types.js').Product>} Updated product
  */
-export async function deleteProduct(id, existingProducts) {
+export async function setProductActiveStatus(id, isActive, existingProducts) {
   const productIndex = existingProducts.findIndex((p) => p.id === id);
   if (productIndex === -1) {
     throw new Error('Product not found');
   }
 
-  // Soft delete - set isActive to false
-  const updatedProducts = [...existingProducts];
-  updatedProducts[productIndex] = {
-    ...updatedProducts[productIndex],
-    isActive: false,
+  const product = existingProducts[productIndex];
+
+  if (isActive) {
+    // When activating, check no other active product has the same size
+    const duplicate = existingProducts.find(
+      (p) => p.id !== id && p.size.toLowerCase() === product.size.toLowerCase() && p.isActive
+    );
+    if (duplicate) {
+      throw new Error(`Product with size ${product.size} already exists`);
+    }
+  }
+
+  const updatedProduct = {
+    ...product,
+    isActive,
     updatedAt: new Date().toISOString(),
   };
+  const updatedProducts = [...existingProducts];
+  updatedProducts[productIndex] = updatedProduct;
   await saveProducts(updatedProducts);
+  return updatedProduct;
+}
+
+/**
+ * Deactivate a product (soft delete - set isActive to false)
+ * @param {string} id - Product ID
+ * @param {import('./types.js').Product[]} existingProducts - Existing products array
+ * @returns {Promise<import('./types.js').Product>} Updated product
+ */
+export async function deactivateProduct(id, existingProducts) {
+  return setProductActiveStatus(id, false, existingProducts);
+}
+
+/**
+ * Activate a deactivated product
+ * @param {string} id - Product ID
+ * @param {import('./types.js').Product[]} existingProducts - Existing products array
+ * @returns {Promise<import('./types.js').Product>} Updated product
+ */
+export async function activateProduct(id, existingProducts) {
+  return setProductActiveStatus(id, true, existingProducts);
 }
 
 /**
@@ -216,6 +250,15 @@ export function findProductById(id, products) {
  */
 export function getActiveProducts(products) {
   return products.filter((p) => p.isActive);
+}
+
+/**
+ * Get inactive (deactivated) products only
+ * @param {import('./types.js').Product[]} products - Products array
+ * @returns {import('./types.js').Product[]} Inactive products
+ */
+export function getInactiveProducts(products) {
+  return products.filter((p) => !p.isActive);
 }
 
 /**

@@ -140,6 +140,36 @@ export function getOrderTotalQuantity(order) {
 }
 
 /**
+ * Reduce product stock for order line items
+ * @param {{ productId: string, quantity: number }[]} lineItems - Order line items
+ * @param {import('../products/types.js').Product[]} existingProducts - Existing products
+ * @returns {{ updatedProducts: import('../products/types.js').Product[], changed: boolean }}
+ */
+function reduceStockForLineItems(lineItems, existingProducts) {
+  let updatedProducts = [...existingProducts];
+  let changed = false;
+  for (const item of lineItems) {
+    const productIndex = updatedProducts.findIndex((p) => p.id === item.productId);
+    if (productIndex === -1) continue;
+    const product = updatedProducts[productIndex];
+    const trackStock = product.trackStock !== false;
+    const qty = item.quantity || 0;
+    if (trackStock && qty > 0) {
+      const currentStock = (product.currentStock ?? 0) - qty;
+      const readyToShip = Math.max(0, (product.readyToShip ?? 0) - qty);
+      updatedProducts[productIndex] = {
+        ...product,
+        currentStock: Math.max(0, currentStock),
+        readyToShip,
+        updatedAt: new Date().toISOString(),
+      };
+      changed = true;
+    }
+  }
+  return { updatedProducts, changed };
+}
+
+/**
  * Validate order data (single item or items array)
  * @param {import('./types.js').OrderFormData} data - Order form data
  * @returns {{isValid: boolean, error?: string}} Validation result
@@ -336,11 +366,22 @@ export async function createOrder(
   // Save cash balance
   await saveCashBalance(newCashBalance);
 
+  // Reduce product stock when order is placed
+  let updatedProducts = existingProducts;
+  if (existingProducts.length > 0) {
+    const { updatedProducts: reduced, changed } = reduceStockForLineItems(lineItems, existingProducts);
+    if (changed) {
+      await storageService.setItem('products_data', reduced);
+      updatedProducts = reduced;
+    }
+  }
+
   return {
     order: newOrder,
     bottleTransaction,
     payment,
     newCashBalance,
+    products: updatedProducts,
   };
 }
 

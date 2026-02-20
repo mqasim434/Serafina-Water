@@ -29,6 +29,8 @@ import { getCurrentAuthUser, loadToken } from './features/auth/service.js';
 import { setLanguage } from './features/i18n/slice.js';
 import { loadLanguage } from './features/i18n/service.js';
 import { initializeDefaultAdmin } from './features/users/init.js';
+import { setUsers } from './features/users/slice.js';
+import { usersService } from './features/users/slice.js';
 
 function AppRoutes() {
   const dispatch = useDispatch();
@@ -53,6 +55,13 @@ function AppRoutes() {
         if (savedUser && savedToken) {
           dispatch(setUser(savedUser));
           dispatch(setToken(savedToken));
+          // Load users so "Created by" can show names in transaction details
+          try {
+            const loadedUsers = await usersService.loadUsers();
+            dispatch(setUsers(loadedUsers));
+          } catch (e) {
+            console.warn('Could not load users:', e);
+          }
         }
       } catch (error) {
         console.error('Error initializing app:', error);
