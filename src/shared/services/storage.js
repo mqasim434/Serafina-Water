@@ -5,7 +5,7 @@
  * No localStorage fallback - Firebase is required.
  */
 
-import { getDocuments, setDocument, deleteDocument, batchSetDocuments } from './firestore.js';
+import { getDocuments, getDocument, setDocument, deleteDocument, batchSetDocuments } from './firestore.js';
 import { db } from './firebase.js';
 
 /**

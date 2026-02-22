@@ -291,9 +291,9 @@ export function Dashboard() {
                   <p className="text-sm text-amber-800">{t('noDeliveriesToday')}</p>
                 ) : (
                   <ul className="space-y-1">
-                    {maintenanceService.getMaintenanceDueTodayOrOverdue(maintenanceTasks, today).map((t) => (
-                      <li key={t.id} className="flex justify-between text-sm">
-                        <span>{t.itemName}</span>
+                    {maintenanceService.getMaintenanceDueTodayOrOverdue(maintenanceTasks, today).map((task) => (
+                      <li key={task.id} className="flex justify-between text-sm">
+                        <span>{task.itemName}</span>
                         <Link to="/maintenance" className="text-blue-600 font-medium">{t('markDone')}</Link>
                       </li>
                     ))}
@@ -307,15 +307,15 @@ export function Dashboard() {
                   <p className="text-sm text-blue-800">None</p>
                 ) : (
                   <ul className="space-y-1">
-                    {maintenanceService.getCertificatesExpiringSoon(maintenanceTasks, today).map((t) => (
-                      <li key={t.id} className="flex justify-between text-sm">
-                        <span>{t.documentName} — {t.expiryDate}</span>
+                    {maintenanceService.getCertificatesExpiringSoon(maintenanceTasks, today).map((cert) => (
+                      <li key={cert.id} className="flex justify-between text-sm">
+                        <span>{cert.documentName} — {cert.expiryDate}</span>
                         <Link to="/maintenance" className="text-blue-600 font-medium">{t('markRenewed')}</Link>
                       </li>
                     ))}
-                    {maintenanceService.getCertificatesExpired(maintenanceTasks, today).map((t) => (
-                      <li key={t.id} className="flex justify-between text-sm text-red-700">
-                        <span>{t.documentName} — {t.expiryDate} (Expired)</span>
+                    {maintenanceService.getCertificatesExpired(maintenanceTasks, today).map((cert) => (
+                      <li key={cert.id} className="flex justify-between text-sm text-red-700">
+                        <span>{cert.documentName} — {cert.expiryDate} (Expired)</span>
                         <Link to="/maintenance" className="text-blue-600 font-medium">{t('markRenewed')}</Link>
                       </li>
                     ))}
