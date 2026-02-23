@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../../../shared/components/LoadingButton.jsx';
 
 /**
  * Category Manager props
@@ -28,6 +29,8 @@ export function CategoryManager({ onCreate, onUpdate, onDelete }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const handleAdd = () => {
     setFormData({ name: '', description: '' });
@@ -49,6 +52,7 @@ export function CategoryManager({ onCreate, onUpdate, onDelete }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       if (editingId) {
         await onUpdate(editingId, formData.name, formData.description);
@@ -58,6 +62,8 @@ export function CategoryManager({ onCreate, onUpdate, onDelete }) {
       handleCancel();
     } catch (error) {
       alert(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -65,10 +71,13 @@ export function CategoryManager({ onCreate, onUpdate, onDelete }) {
     if (!window.confirm(t('deleteCategory') + '?')) {
       return;
     }
+    setDeletingId(categoryId);
     try {
       await onDelete(categoryId);
     } catch (error) {
       alert(error.message);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -122,19 +131,12 @@ export function CategoryManager({ onCreate, onUpdate, onDelete }) {
               />
             </div>
             <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
+              <LoadingButton type="button" variant="secondary" size="sm" onClick={handleCancel} disabled={isSubmitting}>
                 {t('cancel')}
-              </button>
-              <button
-                type="submit"
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-              >
+              </LoadingButton>
+              <LoadingButton type="submit" size="sm" isLoading={isSubmitting}>
                 {editingId ? t('save') : t('addCategory')}
-              </button>
+              </LoadingButton>
             </div>
           </form>
         </div>
@@ -161,12 +163,16 @@ export function CategoryManager({ onCreate, onUpdate, onDelete }) {
                     {t('edit')}
                   </button>
                   {!isCategoryInUse(category.id) && (
-                    <button
+                    <LoadingButton
+                      type="button"
+                      size="sm"
+                      variant="danger"
                       onClick={() => handleDelete(category.id)}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      isLoading={deletingId === category.id}
+                      className="text-red-600 hover:text-red-700"
                     >
                       {t('delete')}
-                    </button>
+                    </LoadingButton>
                   )}
                 </div>
               </div>

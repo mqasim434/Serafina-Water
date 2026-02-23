@@ -27,6 +27,16 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
   const { items: orders } = useSelector((state) => state.orders);
   const { items: payments } = useSelector((state) => state.payments);
   const { transactions } = useSelector((state) => state.bottles);
+  const { items: users } = useSelector((state) => state.users);
+  const { user: currentUser } = useSelector((state) => state.auth);
+
+  const getUserName = (id) => {
+    if (!id) return '';
+    if (currentUser?.id === id) return currentUser.displayName || currentUser.username || id;
+    const user = users?.find((u) => u.id === id);
+    if (!user) return id;
+    return user.displayName || user.username || (user.role ? t(user.role) : id);
+  };
 
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [balanceOpen, setBalanceOpen] = useState(false);
@@ -416,6 +426,11 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                       </span>
                       <p className="text-gray-500 text-xs mt-1">
                         {new Date(item.date).toLocaleString()}
+                        {item.data.createdBy && (
+                          <span className="block mt-0.5">
+                            {t('placedBy')}: {getUserName(item.data.createdBy)}
+                          </span>
+                        )}
                       </p>
                     </>
                   ) : (
@@ -429,6 +444,11 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                       <p className="text-gray-500 text-xs mt-1">
                         {new Date(item.date).toLocaleString()}
                         {item.data.notes && ` — ${item.data.notes}`}
+                        {item.data.createdBy && (
+                          <span className="block mt-0.5">
+                            {item.data.type === 'issued' ? t('issuedBy') : t('returnedBy')}: {getUserName(item.data.createdBy)}
+                          </span>
+                        )}
                       </p>
                     </>
                   )}
@@ -461,6 +481,11 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   {new Date(payment.createdAt).toLocaleString()}
+                  {payment.createdBy && (
+                    <span className="block mt-0.5">
+                      {t('receivedBy')}: {getUserName(payment.createdBy)}
+                    </span>
+                  )}
                 </p>
                 {payment.notes && (
                   <p className="text-sm text-gray-600 mt-1">{payment.notes}</p>

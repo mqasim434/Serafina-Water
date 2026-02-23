@@ -133,6 +133,31 @@ export async function updateEmployee(id, data, existingEmployees) {
   return updated;
 }
 
+/**
+ * Deactivate an employee (sets isActive to false)
+ */
+export async function deactivateEmployee(id, existingEmployees) {
+  return updateEmployee(id, { isActive: false }, existingEmployees);
+}
+
+/**
+ * Activate an employee (sets isActive to true)
+ */
+export async function activateEmployee(id, existingEmployees) {
+  return updateEmployee(id, { isActive: true }, existingEmployees);
+}
+
+/**
+ * Permanently delete an employee (payment history is preserved)
+ */
+export async function deleteEmployee(id, existingEmployees) {
+  const idx = existingEmployees.findIndex((e) => e.id === id);
+  if (idx === -1) throw new Error('Employee not found');
+  const updated = existingEmployees.filter((e) => e.id !== id);
+  await saveEmployees(updated);
+  return { deletedId: id };
+}
+
 export async function markPaid(
   employeeId,
   paidDate,

@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 import {
   setLoading,
   setSettings,
@@ -287,13 +288,9 @@ export function Settings() {
                     className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
+                <LoadingButton type="submit" isLoading={isLoading}>
                   {t('save')}
-                </button>
+                </LoadingButton>
               </form>
             </div>
           )}
@@ -417,13 +414,9 @@ export function Settings() {
                     <p className="mt-1 text-xs text-gray-500">{t('warningToleranceDescription')}</p>
                   </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
+                <LoadingButton type="submit" isLoading={isLoading}>
                   {t('save')}
-                </button>
+                </LoadingButton>
               </form>
             </div>
           )}

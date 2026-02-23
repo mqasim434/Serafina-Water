@@ -35,6 +35,10 @@ const payrollSlice = createSlice({
       if (idx !== -1) state.employees[idx] = action.payload;
       state.error = null;
     },
+    removeEmployee: (state, action) => {
+      state.employees = state.employees.filter((e) => e.id !== action.payload);
+      state.error = null;
+    },
     addPayment: (state, action) => {
       state.payments.push(action.payload);
     },
@@ -54,6 +58,7 @@ export const {
   setPayments,
   addEmployee,
   updateEmployeeInState,
+  removeEmployee,
   addPayment,
   setPaymentsFull,
   setError,

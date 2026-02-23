@@ -153,12 +153,13 @@ function TransactionRow({ transaction, getCustomerName, getUserName, products, i
  * Transaction History component
  * @param {TransactionHistoryProps} props
  */
-export function TransactionHistory({ customerId }) {
+function TransactionHistory({ customerId }) {
   const { t } = useTranslation();
   const { transactions } = useSelector((state) => state.bottles);
   const { items: customers } = useSelector((state) => state.customers);
   const { items: products } = useSelector((state) => state.products);
   const { items: users } = useSelector((state) => state.users);
+  const { user: currentUser } = useSelector((state) => state.auth);
   const [expandedId, setExpandedId] = useState(null);
   const [showAllView, setShowAllView] = useState(false);
   const [rangeStart, setRangeStart] = useState(() => {
@@ -197,6 +198,11 @@ export function TransactionHistory({ customerId }) {
   };
 
   const getUserName = (id) => {
+    if (!id) return '';
+    // Check current auth user first (works even if users list not loaded)
+    if (currentUser?.id === id) {
+      return currentUser.displayName || currentUser.username || id;
+    }
     const user = users?.find((u) => u.id === id);
     if (!user) return id;
     const name = user.displayName || user.username;
@@ -297,3 +303,5 @@ export function TransactionHistory({ customerId }) {
     </div>
   );
 }
+
+export default TransactionHistory;

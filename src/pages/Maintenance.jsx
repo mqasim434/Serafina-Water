@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 import { isAdmin } from '../features/auth/service.js';
 import {
   setLoading,
@@ -468,12 +469,12 @@ function AddEquipmentForm({ onClose, onSubmit, isLoading }) {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+            <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
-            </button>
-            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            </LoadingButton>
+            <LoadingButton type="submit" isLoading={isLoading}>
               {t('save')}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>
@@ -595,12 +596,12 @@ function AddCertificateForm({ onClose, onSubmit, isLoading }) {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+            <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
-            </button>
-            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            </LoadingButton>
+            <LoadingButton type="submit" isLoading={isLoading}>
               {t('save')}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>
@@ -645,12 +646,12 @@ function MarkDoneModal({ task, onClose, onSubmit, isLoading }) {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+            <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
-            </button>
-            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            </LoadingButton>
+            <LoadingButton type="submit" isLoading={isLoading}>
               {t('markDone')}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>
@@ -723,12 +724,12 @@ function MarkRenewedModal({ task, onClose, onSubmit, isLoading }) {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+            <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
-            </button>
-            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            </LoadingButton>
+            <LoadingButton type="submit" isLoading={isLoading}>
               {t('markRenewed')}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>

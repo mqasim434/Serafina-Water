@@ -18,7 +18,10 @@ export function WaterQualityList() {
   const sortedEntries = [...entries].sort((a, b) => {
     const dateDiff = new Date(b.date) - new Date(a.date);
     if (dateDiff !== 0) return dateDiff;
-    return (b.time || '').localeCompare(a.time || '', undefined, { numeric: true });
+    const timeDiff = (b.time || '').localeCompare(a.time || '', undefined, { numeric: true });
+    if (timeDiff !== 0) return timeDiff;
+    // Same date and time: use createdAt (ISO timestamp with ms) so most recent entry appears first
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
   });
 
   const getStatusBadgeClass = (status) => {

@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { OrderForm } from '../features/orders/components/OrderForm.jsx';
 import { CustomerBottleBalance } from '../features/bottles/components/CustomerBottleBalance.jsx';
-import { TransactionHistory } from '../features/bottles/components/TransactionHistory.jsx';
+import TransactionHistory from '../features/bottles/components/TransactionHistory.jsx';
 import { CustomerSearch } from '../features/customers/components/CustomerSearch.jsx';
 import {
   setLoading,
@@ -29,7 +29,10 @@ import { paymentsService } from '../features/payments/slice.js';
 import { setCashBalance } from '../features/orders/slice.js';
 import * as cashService from '../features/cash/service.js';
 import * as receiptsService from '../features/receipts/service.js';
+import { setUsers } from '../features/users/slice.js';
+import { usersService } from '../features/users/slice.js';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 
 export function Bottles() {
   const dispatch = useDispatch();
@@ -39,6 +42,7 @@ export function Bottles() {
   const { items: products } = useSelector((state) => state.products);
   const { items: orders } = useSelector((state) => state.orders);
   const { items: payments } = useSelector((state) => state.payments);
+  const { items: users } = useSelector((state) => state.users);
   const { user } = useSelector((state) => state.auth);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -54,7 +58,7 @@ export function Bottles() {
   });
   const [ordersRangeEnd, setOrdersRangeEnd] = useState(cashService.getTodayDate());
 
-  // Load all necessary data on mount
+  // Load all necessary data on mount (including users for "Created by" in transaction history)
   useEffect(() => {
     async function loadData() {
       dispatch(setLoading(true));
@@ -65,12 +69,14 @@ export function Bottles() {
           loadedProducts,
           loadedOrders,
           loadedPayments,
+          loadedUsers,
         ] = await Promise.all([
           bottlesService.loadTransactions(),
           customers.length === 0 ? customersService.loadCustomers() : Promise.resolve(null),
           products.length === 0 ? productsService.loadProducts() : Promise.resolve(null),
           ordersService.loadOrders(),
           paymentsService.loadPayments(),
+          users.length === 0 ? usersService.loadUsers().catch(() => null) : Promise.resolve(null),
         ]);
 
         dispatch(setTransactions(loadedTransactions));
@@ -78,6 +84,7 @@ export function Bottles() {
         if (loadedProducts) dispatch(setProducts(loadedProducts));
         dispatch(setOrders(loadedOrders));
         dispatch(setPayments(loadedPayments));
+        if (loadedUsers) dispatch(setUsers(loadedUsers));
       } catch (err) {
         dispatch(setError(err.message));
       } finally {
@@ -91,6 +98,7 @@ export function Bottles() {
 
   // Handle order submission
   const handleOrderSubmit = async (orderData) => {
+    const loadStart = Date.now();
     dispatch(setLoading(true));
     dispatch(setError(null));
     setShowSuccessMessage(false); // Clear any previous success message
@@ -154,25 +162,24 @@ export function Bottles() {
       const successMsg = t('orderCreated') + (orderNumber ? ` - ${t('order')} #${orderNumber}` : '');
       setSuccessMessage(successMsg);
       
-      // Keep loading visible for at least 500ms, then show success
+      // Keep loading on the button until the entry is visible on the side (order list has re-rendered)
+      // Use a minimum duration so loading is perceptible; wait for paint so the new order is visible
+      const elapsed = Date.now() - loadStart;
+      const minLoadingMs = 400;
+      const waitMs = Math.max(0, minLoadingMs - elapsed);
       setTimeout(() => {
-        dispatch(setLoading(false));
-        
-        // Show success notification immediately after loading clears
-        setTimeout(() => {
-          setShowSuccessMessage(true);
-          
-          // Auto-hide success message after 4 seconds
-          setTimeout(() => {
-            setShowSuccessMessage(false);
-          }, 4000);
-        }, 50);
-        
-        // Reset form after a brief delay
-        setTimeout(() => {
-          setSelectedCustomerId('');
-        }, 1000);
-      }, 500);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            dispatch(setLoading(false));
+            
+            setShowSuccessMessage(true);
+            setTimeout(() => setShowSuccessMessage(false), 4000);
+            
+            // Reset form after user has seen the new order in the list
+            setTimeout(() => setSelectedCustomerId(''), 500);
+          });
+        });
+      }, waitMs);
 
       // Show receipt - TEMPORARILY DISABLED FOR BUILD TESTING
       // const customer = customers.find((c) => c.id === selectedCustomerId);
@@ -323,14 +330,15 @@ export function Bottles() {
                       <p className="text-xs text-gray-500">{productSummary}</p>
                       <p className="text-xs text-gray-500">{t('quantity')}: {totalQty}</p>
                       {status === 'pending' && (
-                        <button
+                        <LoadingButton
                           type="button"
+                          size="sm"
                           onClick={() => handleMarkReady(order.id)}
-                          disabled={isLoading}
-                          className="w-full mt-2 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded disabled:opacity-50"
+                          isLoading={isLoading}
+                          className="w-full mt-2"
                         >
                           {t('markReady')}
-                        </button>
+                        </LoadingButton>
                       )}
                     </div>
                   );
@@ -378,14 +386,15 @@ export function Bottles() {
                           </td>
                           <td className="px-4 py-2 text-right">
                             {ordersService.getDeliveryStatus(order) === 'pending' && (
-                              <button
+                              <LoadingButton
                                 type="button"
+                                size="sm"
                                 onClick={() => handleMarkReady(order.id)}
-                                disabled={isLoading}
-                                className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50"
+                                isLoading={isLoading}
+                                className="text-blue-600 hover:text-blue-900"
                               >
                                 {t('markReady')}
-                              </button>
+                              </LoadingButton>
                             )}
                           </td>
                         </tr>
@@ -558,19 +567,20 @@ export function Bottles() {
                         <p className="text-xs text-gray-500">{productSummary}</p>
                         <p className="text-xs text-gray-500">{t('quantity')}: {totalQty}</p>
                         {status === 'pending' && (
-                          <button
+                          <LoadingButton
                             type="button"
+                            size="sm"
                             onClick={() => handleMarkReady(order.id)}
-                            disabled={isLoading}
-                            className="w-full mt-2 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded disabled:opacity-50"
+                            isLoading={isLoading}
+                            className="w-full mt-2"
                           >
                             {t('markReady')}
-                          </button>
+                          </LoadingButton>
                         )}
                       </div>
                     );
                   })}
-              </div>
+                </div>
               {/* Desktop table */}
               <div className="hidden sm:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -616,14 +626,15 @@ export function Bottles() {
                           </td>
                           <td className="px-4 py-2 text-right">
                             {ordersService.getDeliveryStatus(order) === 'pending' && (
-                              <button
+                              <LoadingButton
                                 type="button"
+                                size="sm"
                                 onClick={() => handleMarkReady(order.id)}
-                                disabled={isLoading}
-                                className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50"
+                                isLoading={isLoading}
+                                className="text-blue-600 hover:text-blue-900"
                               >
                                 {t('markReady')}
-                              </button>
+                              </LoadingButton>
                             )}
                           </td>
                         </tr>

@@ -4,6 +4,7 @@
 
 import { useState, useRef } from 'react';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../../../shared/components/LoadingButton.jsx';
 import { ordersService } from '../../orders/slice.js';
 import { isImageKitConfigured, uploadDeliveryProof } from '../imagekit.js';
 
@@ -196,21 +197,17 @@ export function DeliveryScreen({ order, customer, products, onDelivered, onBack,
         )}
 
         <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={isLoading}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-          >
+          <LoadingButton type="button" variant="secondary" onClick={onBack} disabled={isLoading}>
             {t('cancel')}
-          </button>
-          <button
+          </LoadingButton>
+          <LoadingButton
             type="submit"
-            disabled={isLoading || (isImageKitConfigured() && !photoFile)}
-            className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            isLoading={isLoading}
+            variant="success"
+            disabled={isImageKitConfigured() && !photoFile}
           >
-            {isLoading ? t('loading') : t('markDelivered')}
-          </button>
+            {t('markDelivered')}
+          </LoadingButton>
         </div>
       </form>
     </div>

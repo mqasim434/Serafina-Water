@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ReturnForm } from '../features/bottles/components/ReturnForm.jsx';
 import { CustomerBottleBalance } from '../features/bottles/components/CustomerBottleBalance.jsx';
-import { TransactionHistory } from '../features/bottles/components/TransactionHistory.jsx';
+import TransactionHistory from '../features/bottles/components/TransactionHistory.jsx';
 import { CustomersWithOutstandingBottles } from '../features/bottles/components/CustomersWithOutstandingBottles.jsx';
 import { CustomerSearch } from '../features/customers/components/CustomerSearch.jsx';
 import {

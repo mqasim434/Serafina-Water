@@ -140,7 +140,7 @@ export function Expenses() {
         </div>
       )}
 
-      {viewMode === VIEW_MODES.LIST && <ExpenseList onDelete={handleDeleteExpense} />}
+      {viewMode === VIEW_MODES.LIST && <ExpenseList onDelete={handleDeleteExpense} isLoading={isLoading} />}
 
       {viewMode === VIEW_MODES.ADD && (
         <div className="bg-white rounded-lg shadow p-4 sm:p-6">

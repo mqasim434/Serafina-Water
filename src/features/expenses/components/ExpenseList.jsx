@@ -6,6 +6,7 @@
 
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../../../shared/components/LoadingButton.jsx';
 
 /**
  * Expense List props
@@ -17,7 +18,7 @@ import { useTranslation } from '../../../shared/hooks/useTranslation.js';
  * Expense List component
  * @param {ExpenseListProps} props
  */
-export function ExpenseList({ onDelete }) {
+export function ExpenseList({ onDelete, isLoading }) {
   const { t } = useTranslation();
   const { items: expenses } = useSelector((state) => state.expenses);
 
@@ -58,13 +59,16 @@ export function ExpenseList({ onDelete }) {
             {expense.description && (
               <p className="text-xs text-gray-600 line-clamp-2">{expense.description}</p>
             )}
-            <button
+            <LoadingButton
               type="button"
+              size="sm"
+              variant="danger"
               onClick={() => onDelete(expense.id)}
-              className="w-full py-2 text-red-600 hover:bg-red-50 font-medium text-sm rounded border border-red-200"
+              isLoading={isLoading}
+              className="w-full border border-red-200"
             >
               {t('delete')}
-            </button>
+            </LoadingButton>
           </div>
         ))}
       </div>
@@ -107,12 +111,16 @@ export function ExpenseList({ onDelete }) {
                   Rs. {expense.amount.toLocaleString()}
                 </td>
                 <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
-                  <button
+                  <LoadingButton
+                    type="button"
+                    size="sm"
+                    variant="danger"
                     onClick={() => onDelete(expense.id)}
-                    className="text-red-600 hover:text-red-700 font-medium"
+                    isLoading={isLoading}
+                    className="text-red-600 hover:text-red-700"
                   >
                     {t('delete')}
-                  </button>
+                  </LoadingButton>
                 </td>
               </tr>
             ))}

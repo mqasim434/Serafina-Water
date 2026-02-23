@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 import { DeliveryScreen } from '../features/delivery/components/DeliveryScreen.jsx';
 import { DeliveredOrderDetails } from '../features/delivery/components/DeliveredOrderDetails.jsx';
 import { openWhatsAppWithOrderSummary } from '../features/delivery/whatsapp.js';
@@ -171,14 +172,16 @@ export function Deliveries() {
                   {t('order')} #{order.orderNumber} – {customer?.name ?? order.customerId}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">Rs. {(order.totalAmount || 0).toLocaleString()}</p>
-                <button
+                <LoadingButton
                   type="button"
+                  size="sm"
+                  variant="warning"
                   onClick={() => handleMarkReady(order.id)}
-                  disabled={isLoading}
-                  className="mt-2 w-full px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded hover:bg-amber-700 disabled:opacity-50"
+                  isLoading={isLoading}
+                  className="mt-2 w-full"
                 >
                   {t('markReady')}
-                </button>
+                </LoadingButton>
               </li>
             );
           })}
@@ -215,14 +218,16 @@ export function Deliveries() {
                   </p>
                 </button>
                 <div className="mt-2 flex gap-2">
-                  <button
+                  <LoadingButton
                     type="button"
+                    size="sm"
+                    variant="secondary"
                     onClick={(e) => handleMarkPending(e, order.id)}
-                    disabled={isLoading}
-                    className="flex-1 px-2 py-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100 disabled:opacity-50"
+                    isLoading={isLoading}
+                    className="flex-1 border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100"
                   >
                     {t('markPending')}
-                  </button>
+                  </LoadingButton>
                   <button
                     type="button"
                     onClick={() => setSelectedOrder(order)}

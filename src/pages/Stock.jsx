@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 import {
   setLoading,
   setProducts,
@@ -165,14 +166,15 @@ export function Stock() {
                         className="flex-1 min-w-0 max-w-24 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
-                    <button
+                    <LoadingButton
                       type="button"
+                      size="sm"
                       onClick={() => handleSaveReadyToShip(product.id)}
-                      disabled={isSaving}
-                      className="w-full py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded disabled:opacity-50 border border-blue-200"
+                      isLoading={isSaving}
+                      className="w-full border border-blue-200"
                     >
-                      {isSaving ? t('loading') : t('save')}
-                    </button>
+                      {t('save')}
+                    </LoadingButton>
                   </div>
                 );
               })}
@@ -230,14 +232,15 @@ export function Stock() {
                           />
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
-                          <button
+                          <LoadingButton
                             type="button"
+                            size="sm"
                             onClick={() => handleSaveReadyToShip(product.id)}
-                            disabled={isSaving}
-                            className="text-blue-600 hover:text-blue-900 font-medium disabled:opacity-50"
+                            isLoading={isSaving}
+                            className="text-blue-600 hover:text-blue-900"
                           >
-                            {isSaving ? t('loading') : t('save')}
-                          </button>
+                            {t('save')}
+                          </LoadingButton>
                         </td>
                       </tr>
                     );

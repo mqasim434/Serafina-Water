@@ -277,8 +277,15 @@ export function getEntryForDate(date, entries) {
  */
 export function getLatestEntry(entries) {
   if (entries.length === 0) return null;
-  // Never sort Redux state arrays in-place (they can be frozen in dev)
-  return [...entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  // Sort by date, then time, then createdAt (ms precision) so most recent is first
+  const sorted = [...entries].sort((a, b) => {
+    const dateDiff = new Date(b.date) - new Date(a.date);
+    if (dateDiff !== 0) return dateDiff;
+    const timeDiff = (b.time || '').localeCompare(a.time || '', undefined, { numeric: true });
+    if (timeDiff !== 0) return timeDiff;
+    return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+  });
+  return sorted[0];
 }
 
 /**

@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../../../shared/components/LoadingButton.jsx';
 import * as cashService from '../../../features/cash/service.js';
 
 /**
@@ -206,21 +207,12 @@ export function WaterQualityForm({ onSubmit, onCancel, isLoading }) {
       </div>
 
       <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full sm:flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? t('loading') : t('save')}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
-        >
+        <LoadingButton type="submit" isLoading={isLoading} className="w-full sm:flex-1">
+          {t('save')}
+        </LoadingButton>
+        <LoadingButton type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           {t('cancel')}
-        </button>
+        </LoadingButton>
       </div>
     </form>
   );

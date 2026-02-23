@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 import {
   setLoading,
   setProducts,
@@ -46,6 +47,7 @@ export function Products() {
   const [addStockProduct, setAddStockProduct] = useState(null);
   const [addStockQty, setAddStockQty] = useState('');
   const [addStockError, setAddStockError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load products on mount
   useEffect(() => {
@@ -203,6 +205,7 @@ export function Products() {
       return;
     }
 
+    setIsSubmitting(true);
     dispatch(setLoading(true));
     dispatch(setError(null));
 
@@ -241,6 +244,7 @@ export function Products() {
     } catch (err) {
       dispatch(setError(err.message));
     } finally {
+      setIsSubmitting(false);
       dispatch(setLoading(false));
     }
   };
@@ -342,20 +346,25 @@ export function Products() {
                       <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
                     ) : null}
                     <div className="flex gap-3 pt-2 border-t border-gray-100">
-                      <button
+                      <LoadingButton
                         type="button"
+                        size="sm"
                         onClick={() => handleEdit(product)}
-                        className="flex-1 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded border border-blue-200"
+                        disabled={isLoading}
+                        className="flex-1 border border-blue-200"
                       >
                         {t('edit')}
-                      </button>
-                      <button
+                      </LoadingButton>
+                      <LoadingButton
                         type="button"
+                        size="sm"
+                        variant="warning"
                         onClick={() => handleDeactivate(product.id)}
-                        className="flex-1 py-2 text-amber-600 hover:bg-amber-50 font-medium text-sm rounded border border-amber-200"
+                        isLoading={isLoading}
+                        className="flex-1 border border-amber-200"
                       >
                         {t('deactivate')}
-                      </button>
+                      </LoadingButton>
                     </div>
                   </div>
                 ))}
@@ -419,18 +428,25 @@ export function Products() {
                           {product.description || '-'}
                         </td>
                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
+                          <LoadingButton
+                            type="button"
+                            size="sm"
                             onClick={() => handleEdit(product)}
-                            className="text-blue-600 hover:text-blue-900 mr-4"
+                            disabled={isLoading}
+                            className="text-blue-600 hover:text-blue-900 mr-2"
                           >
                             {t('edit')}
-                          </button>
-                          <button
+                          </LoadingButton>
+                          <LoadingButton
+                            type="button"
+                            size="sm"
+                            variant="warning"
                             onClick={() => handleDeactivate(product.id)}
+                            isLoading={isLoading}
                             className="text-amber-600 hover:text-amber-900"
                           >
                             {t('deactivate')}
-                          </button>
+                          </LoadingButton>
                         </td>
                       </tr>
                     ))}
@@ -458,20 +474,25 @@ export function Products() {
                         </div>
                         <p className="text-xs text-gray-500">{product.size}</p>
                         <div className="flex gap-3 pt-2">
-                          <button
+                          <LoadingButton
                             type="button"
+                            size="sm"
                             onClick={() => handleEdit(product)}
-                            className="flex-1 py-2 text-blue-600 hover:bg-blue-50 font-medium text-sm rounded border border-blue-200"
+                            disabled={isLoading}
+                            className="flex-1 border border-blue-200"
                           >
                             {t('edit')}
-                          </button>
-                          <button
+                          </LoadingButton>
+                          <LoadingButton
                             type="button"
+                            size="sm"
+                            variant="success"
                             onClick={() => handleActivate(product.id)}
-                            className="flex-1 py-2 text-green-600 hover:bg-green-50 font-medium text-sm rounded border border-green-200"
+                            isLoading={isLoading}
+                            className="flex-1 border border-green-200"
                           >
                             {t('activate')}
-                          </button>
+                          </LoadingButton>
                         </div>
                       </div>
                     ))}
@@ -508,18 +529,25 @@ export function Products() {
                               Rs. {(product.price || 0).toLocaleString()}
                             </td>
                             <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button
+                              <LoadingButton
+                                type="button"
+                                size="sm"
                                 onClick={() => handleEdit(product)}
-                                className="text-blue-600 hover:text-blue-900 mr-4"
+                                disabled={isLoading}
+                                className="text-blue-600 hover:text-blue-900 mr-2"
                               >
                                 {t('edit')}
-                              </button>
-                              <button
+                              </LoadingButton>
+                              <LoadingButton
+                                type="button"
+                                size="sm"
+                                variant="success"
                                 onClick={() => handleActivate(product.id)}
+                                isLoading={isLoading}
                                 className="text-green-600 hover:text-green-900"
                               >
                                 {t('activate')}
-                              </button>
+                              </LoadingButton>
                             </td>
                           </tr>
                         ))}
@@ -735,21 +763,12 @@ export function Products() {
             )}
 
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={isLoading}
-                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
+              <LoadingButton type="button" variant="secondary" onClick={handleCancel} disabled={isSubmitting || isLoading}>
                 {t('cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {isLoading ? t('loading') : t('save')}
-              </button>
+              </LoadingButton>
+              <LoadingButton type="submit" isLoading={isSubmitting || isLoading} disabled={isSubmitting || isLoading}>
+                {t('save')}
+              </LoadingButton>
             </div>
           </form>
         </div>
@@ -781,20 +800,16 @@ export function Products() {
                 <p className="text-sm text-red-600 mb-3">{addStockError}</p>
               )}
               <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-                <button
+                <LoadingButton
                   type="button"
+                  variant="secondary"
                   onClick={() => { setShowAddStock(false); setAddStockProduct(null); setAddStockQty(''); setAddStockError(''); }}
-                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   {t('cancel')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                >
+                </LoadingButton>
+                <LoadingButton type="submit" isLoading={isLoading}>
                   {t('save')}
-                </button>
+                </LoadingButton>
               </div>
             </form>
           </div>

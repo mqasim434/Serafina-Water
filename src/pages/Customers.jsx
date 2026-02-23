@@ -26,6 +26,8 @@ import { setTransactions } from '../features/bottles/slice.js';
 import { ordersService } from '../features/orders/slice.js';
 import { paymentsService } from '../features/payments/slice.js';
 import { bottlesService } from '../features/bottles/slice.js';
+import { setUsers } from '../features/users/slice.js';
+import { usersService } from '../features/users/slice.js';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
 
 const VIEW_MODES = {
@@ -42,6 +44,7 @@ export function Customers() {
     (state) => state.customers
   );
   const { items: products } = useSelector((state) => state.products);
+  const { items: users } = useSelector((state) => state.users);
 
   const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -53,18 +56,20 @@ export function Customers() {
         dispatch(setLoading(true));
       }
       try {
-        const [loadedCustomers, loadedProducts, loadedOrders, loadedPayments, loadedTransactions] = await Promise.all([
+        const [loadedCustomers, loadedProducts, loadedOrders, loadedPayments, loadedTransactions, loadedUsers] = await Promise.all([
           customersService.loadCustomers(),
           products.length === 0 ? productsService.loadProducts() : Promise.resolve(null),
           ordersService.loadOrders(),
           paymentsService.loadPayments(),
           bottlesService.loadTransactions(),
+          users.length === 0 ? usersService.loadUsers().catch(() => null) : Promise.resolve(null),
         ]);
         dispatch(setCustomers(loadedCustomers));
         if (loadedProducts) dispatch(setProducts(loadedProducts));
         dispatch(setOrders(loadedOrders));
         dispatch(setPayments(loadedPayments));
         dispatch(setTransactions(loadedTransactions));
+        if (loadedUsers) dispatch(setUsers(loadedUsers));
       } catch (err) {
         dispatch(setError(err.message));
       } finally {

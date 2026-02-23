@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from '../shared/hooks/useTranslation.js';
+import { LoadingButton } from '../shared/components/LoadingButton.jsx';
 import { isAdmin } from '../features/auth/service.js';
 import {
   setLoading,
@@ -13,6 +14,7 @@ import {
   setPayments,
   addEmployee,
   updateEmployeeInState,
+  removeEmployee,
   addPayment,
   setPaymentsFull,
   setError,
@@ -184,9 +186,69 @@ export function Payroll() {
                       <button
                         type="button"
                         onClick={() => setPaymentHistoryEmployee(emp)}
-                        className="text-gray-600 hover:text-gray-800 text-sm"
+                        className="text-gray-600 hover:text-gray-800 text-sm mr-3"
                       >
                         {t('paymentHistory')}
+                      </button>
+                      {emp.isActive ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!window.confirm(t('confirmDeactivateEmployee') || 'Are you sure you want to deactivate this employee?')) return;
+                            dispatch(setLoading(true));
+                            dispatch(setError(null));
+                            try {
+                              const updated = await payrollService.deactivateEmployee(emp.id, employees);
+                              dispatch(updateEmployeeInState(updated));
+                            } catch (err) {
+                              dispatch(setError(err.message));
+                            } finally {
+                              dispatch(setLoading(false));
+                            }
+                          }}
+                          className="text-amber-600 hover:text-amber-800 text-sm"
+                        >
+                          {t('deactivate')}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!window.confirm(t('confirmActivateEmployee') || 'Are you sure you want to activate this employee?')) return;
+                            dispatch(setLoading(true));
+                            dispatch(setError(null));
+                            try {
+                              const updated = await payrollService.activateEmployee(emp.id, employees);
+                              dispatch(updateEmployeeInState(updated));
+                            } catch (err) {
+                              dispatch(setError(err.message));
+                            } finally {
+                              dispatch(setLoading(false));
+                            }
+                          }}
+                          className="text-green-600 hover:text-green-800 text-sm mr-3"
+                        >
+                          {t('activate')}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!window.confirm(t('confirmDeleteEmployee') || 'Are you sure you want to permanently delete this employee?')) return;
+                          dispatch(setLoading(true));
+                          dispatch(setError(null));
+                          try {
+                            await payrollService.deleteEmployee(emp.id, employees);
+                            dispatch(removeEmployee(emp.id));
+                          } catch (err) {
+                            dispatch(setError(err.message));
+                          } finally {
+                            dispatch(setLoading(false));
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-800 text-sm ml-1"
+                      >
+                        {t('delete')}
                       </button>
                     </td>
                   </tr>
@@ -355,12 +417,12 @@ function AddEmployeeForm({ onClose, onSubmit, isLoading, t }) {
             <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">{t('active')}</label>
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+            <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
-            </button>
-            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            </LoadingButton>
+            <LoadingButton type="submit" isLoading={isLoading}>
               {t('save')}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>
@@ -416,12 +478,12 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+            <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
-            </button>
-            <button type="submit" disabled={isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+            </LoadingButton>
+            <LoadingButton type="submit" isLoading={isLoading}>
               {t('markPaid')}
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>
