@@ -1,6 +1,7 @@
 /**
  * WhatsApp integration for delivery notifications.
  * Opens WhatsApp with order summary when order is marked delivered.
+ * Uses api.whatsapp.com/send (not wa.me) for proper emoji display on desktop and mobile.
  */
 
 import { getOrderLineItems } from '../orders/service.js';
@@ -39,7 +40,7 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
   const total = order.totalAmount ?? 0;
   const custName = customer?.name || 'Customer';
 
-  // Build line item strings (shared)
+  // Build line item strings
   const itemStrsEn = [];
   const itemStrsUr = [];
   lineItems.forEach((item) => {
@@ -49,8 +50,8 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
     const price = item.price ?? 0;
     const lineTotal = qty * price;
     const amt = lineTotal.toLocaleString();
-    itemStrsEn.push(`• ${name} x ${qty} — Rs. ${amt}`);
-    itemStrsUr.push(`• ${name} x ${qty} — Rs. ${amt}`);
+    itemStrsEn.push(`* ${name} x ${qty} – Rs. ${amt}`);
+    itemStrsUr.push(`* ${name} x ${qty} – ${amt} روپے`);
   });
 
   const proofBlock = deliveryProofPhotoUrl
@@ -60,51 +61,56 @@ export function buildOrderSummaryForWhatsApp(order, customer, products, amountPa
     ? ['', 'ڈیلیوری ثبوت فوٹو (دیکھنے کے لیے ٹیپ کریں):', deliveryProofPhotoUrl]
     : [];
 
+  // Emojis via Unicode escapes for reliable encoding across devices
+  const E = { party: '\u{1F389}', wave: '\u{1F44B}', truck: '\u{1F69A}', drop: '\u{1F4A7}', check: '\u2713' };
+
   // English section
   const en = [
-    `*Order #${order.orderNumber}* - Delivered ✓`,
+    `${E.party} Order #${order.orderNumber} – Delivered ${E.party}`,
     '',
-    `Hi ${custName}!`,
+    `Hi ${custName} ${E.wave}`,
     '',
-    'Your order has been delivered:',
+    `Your order has been delivered successfully ${E.truck}`,
+    '',
     ...itemStrsEn,
     '',
-    `*Total: Rs. ${total.toLocaleString()}*`,
+    `Total: Rs. ${total.toLocaleString()}`,
+    '',
+    `Thank you for choosing Serafina Water ${E.drop}`,
     ...(outstanding > 0
       ? [
           '',
           `Amount paid: Rs. ${paid.toLocaleString()}`,
-          remaining > 0 ? `Remaining balance: Rs. ${remaining.toLocaleString()}` : 'Paid in full ✓',
+          remaining > 0 ? `Remaining balance: Rs. ${remaining.toLocaleString()}` : `Paid in full ${E.check}`,
         ]
       : []),
     ...proofBlock,
-    '',
-    'Thank you for your order! 🙏',
   ];
 
   // Urdu section
   const ur = [
-    `*آرڈر #${order.orderNumber}* - ڈیلیور شدہ ✓`,
+    `${E.party} آرڈر نمبر ${order.orderNumber} – ڈیلیور ہو گیا ہے ${E.party}`,
     '',
-    `سلام ${custName}!`,
+    `السلام علیکم ${custName} ${E.wave}`,
     '',
-    'آپ کا آرڈر ڈیلیور ہو گیا ہے:',
+    `آپ کا آرڈر کامیابی کے ساتھ ڈیلیور کر دیا گیا ہے ${E.truck}`,
+    '',
     ...itemStrsUr,
     '',
-    `*کل: Rs. ${total.toLocaleString()}*`,
+    `کل رقم: ${total.toLocaleString()} روپے`,
+    '',
+    `سیرافینا واٹر کا انتخاب کرنے کا شکریہ ${E.drop}`,
     ...(outstanding > 0
       ? [
           '',
-          `ادا شدہ رقم: Rs. ${paid.toLocaleString()}`,
-          remaining > 0 ? `باقی رقم: Rs. ${remaining.toLocaleString()}` : 'مکمل ادائیگی ✓',
+          `ادا شدہ رقم: ${paid.toLocaleString()} روپے`,
+          remaining > 0 ? `باقی رقم: ${remaining.toLocaleString()} روپے` : `مکمل ادائیگی ${E.check}`,
         ]
       : []),
     ...proofBlockUr,
-    '',
-    'آپ کے آرڈر کا شکریہ! 🙏',
   ];
 
-  return en.join('\n') + '\n\n─────────────────\n\n' + ur.join('\n');
+  return en.join('\n') + '\n\n--------------------\n\n' + ur.join('\n');
 }
 
 /**
@@ -124,7 +130,8 @@ export async function openWhatsAppWithOrderSummary(order, customer, products, am
 
   const photoUrlToUse = deliveryProofPhotoUrl ? await shortenUrl(deliveryProofPhotoUrl) : deliveryProofPhotoUrl;
   const message = buildOrderSummaryForWhatsApp(order, customer, products, amountPaid, outstandingAmount, photoUrlToUse);
-  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  // Use api.whatsapp.com/send instead of wa.me for proper emoji display (wa.me has known emoji encoding bugs)
+  const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
   return true;
 }

@@ -59,6 +59,11 @@ function TransactionRow({ transaction, getCustomerName, getUserName, products, i
             >
               {transaction.type === 'issued' ? t('issued') : t('returned')}
             </span>
+            {transaction.type === 'issued' && (transaction.isNonReturnable || (product && product.isReturnable === false)) && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                {t('nonReturnable')}
+              </span>
+            )}
             <span className="text-sm text-gray-600">
               {transaction.quantity} {t('bottles')}
             </span>
@@ -122,6 +127,11 @@ function TransactionRow({ transaction, getCustomerName, getUserName, products, i
               <dt className="text-gray-500">{t('transactionType')}</dt>
               <dd className="text-gray-900">
                 {transaction.type === 'issued' ? t('issued') : t('returned')}
+                {transaction.type === 'issued' && (transaction.isNonReturnable || (product && product.isReturnable === false)) && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                    {t('nonReturnable')}
+                  </span>
+                )}
               </dd>
             </div>
             <div>

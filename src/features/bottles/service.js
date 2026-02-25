@@ -45,6 +45,7 @@ export async function saveTransactions(transactions) {
  * @param {string} [createdBy] - User who created the transaction
  * @param {import('./types.js').BottleTransaction[]} existingTransactions - Existing transactions
  * @param {string} [productId] - Product ID (optional, for returns - used to increase product stock)
+ * @param {boolean} [isNonReturnable] - True when issued items are non-returnable (e.g. 1.5L, 500ml)
  * @returns {Promise<import('./types.js').BottleTransaction>} Created transaction
  */
 export async function createTransaction(
@@ -54,7 +55,8 @@ export async function createTransaction(
   notes,
   createdBy,
   existingTransactions,
-  productId
+  productId,
+  isNonReturnable
 ) {
   if (!customerId || !type || !quantity || quantity <= 0) {
     throw new Error('Invalid transaction data');
@@ -71,6 +73,7 @@ export async function createTransaction(
     quantity,
     notes: notes || '',
     ...(productId ? { productId } : {}),
+    ...(isNonReturnable && type === 'issued' ? { isNonReturnable: true } : {}),
     createdAt: new Date().toISOString(),
     createdBy: createdBy || null,
   };

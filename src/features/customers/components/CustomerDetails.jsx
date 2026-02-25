@@ -438,6 +438,11 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                       <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${item.data.type === 'issued' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
                         {item.data.type === 'issued' ? t('issued') : t('returned')}
                       </span>
+                      {item.data.type === 'issued' && (item.data.isNonReturnable || (item.data.productId && (products || []).find((p) => p.id === item.data.productId)?.isReturnable === false)) && (
+                        <span className="ml-2 inline-flex px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700">
+                          {t('nonReturnable')}
+                        </span>
+                      )}
                       <span className="ml-2">
                         {item.data.quantity} {t('bottles')}
                       </span>

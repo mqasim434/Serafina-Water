@@ -175,11 +175,10 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
     });
   };
 
-  // Clear isSubmitting only when parent has finished (externalIsLoading false) - no rush to clear
+  // Clear isSubmitting when parent has finished (externalIsLoading false)
   useEffect(() => {
     if (!externalIsLoading && isSubmitting) {
-      const timer = setTimeout(() => setIsSubmitting(false), 150);
-      return () => clearTimeout(timer);
+      setIsSubmitting(false);
     }
   }, [externalIsLoading, isSubmitting]);
 
@@ -355,7 +354,13 @@ export function OrderForm({ customerId, onSubmit, onCancel, isLoading: externalI
         <LoadingButton type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           {t('cancel')}
         </LoadingButton>
-        <LoadingButton type="submit" isLoading={isLoading} className="w-full sm:w-auto sm:min-w-[140px]">
+        <LoadingButton
+          type="submit"
+          isLoading={isLoading}
+          disabled={isLoading}
+          variant="success"
+          className="w-full sm:w-auto sm:min-w-[140px]"
+        >
           {t('placeOrder')}
         </LoadingButton>
       </div>

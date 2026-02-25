@@ -57,6 +57,7 @@ export function Bottles() {
     return cashService.formatDate(d);
   });
   const [ordersRangeEnd, setOrdersRangeEnd] = useState(cashService.getTodayDate());
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
   // Load all necessary data on mount (including users for "Created by" in transaction history)
   useEffect(() => {
@@ -98,10 +99,13 @@ export function Bottles() {
 
   // Handle order submission
   const handleOrderSubmit = async (orderData) => {
-    const loadStart = Date.now();
+    setIsPlacingOrder(true);
     dispatch(setLoading(true));
     dispatch(setError(null));
     setShowSuccessMessage(false); // Clear any previous success message
+    
+    // Yield to browser so loading state can render before async work starts
+    await new Promise((r) => setTimeout(r, 0));
     
     try {
       // Get current cash balance
@@ -157,29 +161,21 @@ export function Bottles() {
         }
       }
 
+      // Refetch orders from Firestore so the list on the right has the new order
+      const loadedOrders = await ordersService.loadOrders();
+      dispatch(setOrders(loadedOrders));
+
       // Show success message
       const orderNumber = result.order.orderNumber || '';
       const successMsg = t('orderCreated') + (orderNumber ? ` - ${t('order')} #${orderNumber}` : '');
       setSuccessMessage(successMsg);
       
-      // Keep loading on the button until the entry is visible on the side (order list has re-rendered)
-      // Use a minimum duration so loading is perceptible; wait for paint so the new order is visible
-      const elapsed = Date.now() - loadStart;
-      const minLoadingMs = 400;
-      const waitMs = Math.max(0, minLoadingMs - elapsed);
-      setTimeout(() => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            dispatch(setLoading(false));
-            
-            setShowSuccessMessage(true);
-            setTimeout(() => setShowSuccessMessage(false), 4000);
-            
-            // Reset form after user has seen the new order in the list
-            setTimeout(() => setSelectedCustomerId(''), 500);
-          });
-        });
-      }, waitMs);
+      // Clear loading only after order is placed and fetched
+      setIsPlacingOrder(false);
+      dispatch(setLoading(false));
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 4000);
+      setTimeout(() => setSelectedCustomerId(''), 600);
 
       // Show receipt - TEMPORARILY DISABLED FOR BUILD TESTING
       // const customer = customers.find((c) => c.id === selectedCustomerId);
@@ -190,6 +186,8 @@ export function Bottles() {
       setShowReceipt(false); // Disabled for build testing
     } catch (err) {
       dispatch(setError(err.message));
+    } finally {
+      setIsPlacingOrder(false);
       dispatch(setLoading(false));
     }
   };
@@ -502,7 +500,7 @@ export function Bottles() {
                 onCancel={() => {
                   setSelectedCustomerId('');
                 }}
-                isLoading={isLoading}
+                isLoading={isPlacingOrder || isLoading}
                 key={selectedCustomerId} // Force re-render when customer changes
               />
             )}

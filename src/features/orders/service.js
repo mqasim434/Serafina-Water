@@ -318,6 +318,12 @@ export async function createOrder(
     createdBy: createdBy || null,
   };
 
+  // Check if order has only non-returnable products (for transaction tag)
+  const allNonReturnable = lineItems.length > 0 && lineItems.every((item) => {
+    const product = existingProducts.find((p) => p.id === item.productId);
+    return product && product.isReturnable === false;
+  });
+
   // Issue bottles to customer (total quantity for all items)
   const bottleTransaction = await bottlesService.createTransaction(
     data.customerId,
@@ -325,7 +331,9 @@ export async function createOrder(
     totalQuantity,
     `Order #${newOrder.orderNumber}`,
     createdBy,
-    existingBottleTransactions
+    existingBottleTransactions,
+    undefined, // productId - not used for order-created transactions
+    allNonReturnable
   );
 
   // Create payment record if amount was paid

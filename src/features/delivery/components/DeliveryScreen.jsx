@@ -25,6 +25,7 @@ export function DeliveryScreen({ order, customer, products, onDelivered, onBack,
   const [photoPreview, setPhotoPreview] = useState(null);
   const [uploadError, setUploadError] = useState('');
   const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   const outstanding = order.outstandingAmount ?? 0;
@@ -58,11 +59,13 @@ export function DeliveryScreen({ order, customer, products, onDelivered, onBack,
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
+    setIsSubmitting(true);
     let photoUrl = null;
     let fileId = null;
     if (isImageKitConfigured()) {
       if (!photoFile) {
         setSubmitError(t('deliveryProofRequired') || 'Delivery proof photo is required.');
+        setIsSubmitting(false);
         return;
       }
       try {
@@ -71,12 +74,14 @@ export function DeliveryScreen({ order, customer, products, onDelivered, onBack,
         fileId = result.fileId;
       } catch (err) {
         setSubmitError(err.message || 'Failed to upload photo');
+        setIsSubmitting(false);
         return;
       }
     }
     const paid = parseFloat(amountPaid) || 0;
     if (paid > outstanding) {
       setSubmitError(t('amountExceedsBalance') || 'Amount cannot exceed balance');
+      setIsSubmitting(false);
       return;
     }
     try {
@@ -88,6 +93,8 @@ export function DeliveryScreen({ order, customer, products, onDelivered, onBack,
       });
     } catch (err) {
       setSubmitError(err.message || 'Failed to mark delivered');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -197,14 +204,14 @@ export function DeliveryScreen({ order, customer, products, onDelivered, onBack,
         )}
 
         <div className="flex gap-3 pt-2">
-          <LoadingButton type="button" variant="secondary" onClick={onBack} disabled={isLoading}>
+          <LoadingButton type="button" variant="secondary" onClick={onBack} disabled={isSubmitting || isLoading}>
             {t('cancel')}
           </LoadingButton>
           <LoadingButton
             type="submit"
-            isLoading={isLoading}
+            isLoading={isSubmitting || isLoading}
             variant="success"
-            disabled={isImageKitConfigured() && !photoFile}
+            disabled={isSubmitting || isLoading || (isImageKitConfigured() && !photoFile)}
           >
             {t('markDelivered')}
           </LoadingButton>

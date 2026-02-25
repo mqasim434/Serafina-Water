@@ -20,6 +20,7 @@
  * @property {string} [productId] - Product ID (optional, for returns - used to increase product stock)
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the transaction
+ * @property {boolean} [isNonReturnable] - True when issued items are non-returnable (e.g. 1.5L, 500ml, dispenser)
  */
 
 /**
