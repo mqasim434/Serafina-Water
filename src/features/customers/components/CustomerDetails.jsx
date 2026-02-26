@@ -4,7 +4,7 @@
  * Collapsible sections: Customer Details (two-column), Orders, Payments
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -42,6 +42,21 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
   const [balanceOpen, setBalanceOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [paymentsOpen, setPaymentsOpen] = useState(false);
+  const [imageModalUrl, setImageModalUrl] = useState(null);
+
+  useEffect(() => {
+    if (!imageModalUrl) return;
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setImageModalUrl(null);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [imageModalUrl]);
 
   const activeProducts = productsService.getActiveProducts(products);
   const isActive = customer?.isActive !== false;
@@ -251,6 +266,7 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
   );
 
   return (
+    <>
     <div className="space-y-4">
       {/* Section 1: Customer Details - two-column, collapsible */}
       <CollapsibleSection
@@ -414,24 +430,42 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                 <div key={`${item.type}-${item.id}`} className="p-4 hover:bg-gray-50 text-sm">
                   {item.type === 'order' ? (
                     <>
-                      <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                        {t('order')}
-                      </span>
-                      <span className="font-medium">#{item.data.orderNumber}</span>
-                      <span className="text-gray-600 ml-1">
-                        — {ordersService.getOrderTotalQuantity(item.data)} {t('bottles')}
-                      </span>
-                      <span className="text-gray-500 ml-2">
-                        Rs. {(item.data.totalAmount ?? 0).toLocaleString()}
-                      </span>
-                      <p className="text-gray-500 text-xs mt-1">
-                        {new Date(item.date).toLocaleString()}
-                        {item.data.createdBy && (
-                          <span className="block mt-0.5">
-                            {t('placedBy')}: {getUserName(item.data.createdBy)}
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                            {t('order')}
                           </span>
+                          <span className="font-medium">#{item.data.orderNumber}</span>
+                          <span className="text-gray-600 ml-1">
+                            — {ordersService.getOrderTotalQuantity(item.data)} {t('bottles')}
+                          </span>
+                          <span className="text-gray-500 ml-2">
+                            Rs. {(item.data.totalAmount ?? 0).toLocaleString()}
+                          </span>
+                          <p className="text-gray-500 text-xs mt-1">
+                            {new Date(item.date).toLocaleString()}
+                            {item.data.createdBy && (
+                              <span className="block mt-0.5">
+                                {t('placedBy')}: {getUserName(item.data.createdBy)}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        {item.data.deliveryProofPhotoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setImageModalUrl(item.data.deliveryProofPhotoUrl)}
+                            className="flex-shrink-0 rounded border border-gray-200 overflow-hidden hover:border-blue-400 hover:ring-1 hover:ring-blue-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            title={t('deliveryProofPhoto')}
+                          >
+                            <img
+                              src={item.data.deliveryProofPhotoUrl}
+                              alt={t('deliveryProofPhoto')}
+                              className="w-12 h-12 object-cover"
+                            />
+                          </button>
                         )}
-                      </p>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -500,6 +534,34 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
           )}
         </div>
       </CollapsibleSection>
+
     </div>
+
+      {/* Delivery proof image modal - outside space-y-4 to avoid margin */}
+      {imageModalUrl && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          onClick={() => setImageModalUrl(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('deliveryProofPhoto')}
+        >
+          <button
+            type="button"
+            onClick={() => setImageModalUrl(null)}
+            className="absolute top-2 right-2 text-white hover:text-gray-300 text-2xl font-bold z-10"
+            aria-label={t('close')}
+          >
+            ×
+          </button>
+          <img
+            src={imageModalUrl}
+            alt={t('deliveryProofPhoto')}
+            className="max-w-full max-h-[calc(100vh-2rem)] object-contain rounded shadow-lg m-0"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
   );
 }
