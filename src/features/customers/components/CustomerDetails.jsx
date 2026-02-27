@@ -432,8 +432,10 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                     <>
                       <div className="flex items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                            {t('order')}
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium mr-2 ${
+                            item.data.status === 'returned' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {item.data.status === 'returned' ? t('returned') : t('order')}
                           </span>
                           <span className="font-medium">#{item.data.orderNumber}</span>
                           <span className="text-gray-600 ml-1">

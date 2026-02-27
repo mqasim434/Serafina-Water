@@ -15,6 +15,7 @@ import {
   setTransactions,
   setError,
   addTransaction,
+  removeTransaction,
 } from '../features/bottles/slice.js';
 import { bottlesService } from '../features/bottles/slice.js';
 import { setCustomers, updateCustomerInState } from '../features/customers/slice.js';
@@ -24,7 +25,7 @@ import { productsService } from '../features/products/slice.js';
 import { setOrders, addOrder, updateOrderInState } from '../features/orders/slice.js';
 import { ordersService } from '../features/orders/slice.js';
 import { updateProductInState } from '../features/products/slice.js';
-import { setPayments, addPayment } from '../features/payments/slice.js';
+import { setPayments, addPayment, removePayment } from '../features/payments/slice.js';
 import { paymentsService } from '../features/payments/slice.js';
 import { setCashBalance } from '../features/orders/slice.js';
 import * as cashService from '../features/cash/service.js';
@@ -58,6 +59,7 @@ export function Bottles() {
   });
   const [ordersRangeEnd, setOrdersRangeEnd] = useState(cashService.getTodayDate());
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [actionOrderId, setActionOrderId] = useState(null); // orderId for delete/return in progress
 
   // Load all necessary data on mount (including users for "Created by" in transaction history)
   useEffect(() => {
@@ -193,6 +195,63 @@ export function Bottles() {
   };
 
   // Mark order as ready (adds to Deliveries Ready tab for driver)
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm(t('confirmDeleteOrder') || 'Are you sure you want to delete this order? This will reverse bottles, payment, cash, and stock.')) return;
+    setActionOrderId(orderId);
+    dispatch(setError(null));
+    try {
+      const currentCash = await cashService.loadCurrentBalance();
+      const cashBalanceObj = { amount: typeof currentCash === 'number' ? currentCash : (currentCash?.amount ?? 0), lastUpdated: new Date().toISOString() };
+      const result = await ordersService.deleteOrder(
+        orderId,
+        orders,
+        transactions,
+        payments,
+        products
+      );
+      dispatch(setOrders(orders.filter((o) => o.id !== orderId)));
+      if (result.removedTransactionId) dispatch(removeTransaction(result.removedTransactionId));
+      (result.removedPaymentIds || []).forEach((id) => dispatch(removePayment(id)));
+      dispatch(setCashBalance(result.newCashBalance));
+      if (result.products?.length) dispatch(setProducts(result.products));
+      setSuccessMessage(t('orderDeleted') || 'Order deleted successfully');
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      setActionOrderId(null);
+    }
+  };
+
+  const handleReturnOrder = async (orderId) => {
+    if (!window.confirm(t('confirmReturnOrder') || 'Are you sure you want to return this order? This will create bottle returns, reverse payment, cash, and restore stock.')) return;
+    setActionOrderId(orderId);
+    dispatch(setError(null));
+    try {
+      const result = await ordersService.returnOrder(
+        orderId,
+        orders,
+        transactions,
+        payments,
+        products,
+        user?.id || null
+      );
+      dispatch(updateOrderInState(result.order));
+      result.newTransactions.forEach((tx) => dispatch(addTransaction(tx)));
+      (result.removedPaymentIds || []).forEach((id) => dispatch(removePayment(id)));
+      dispatch(setCashBalance(result.newCashBalance));
+      if (result.products?.length) dispatch(setProducts(result.products));
+      setSuccessMessage(t('orderReturned') || 'Order returned successfully');
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    } catch (err) {
+      dispatch(setError(err.message));
+    } finally {
+      setActionOrderId(null);
+    }
+  };
+
   const handleMarkReady = async (orderId) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
@@ -316,8 +375,9 @@ export function Bottles() {
                     .filter(Boolean)
                     .join(', ') || '-';
                   const status = ordersService.getDeliveryStatus(order);
-                  const statusLabel = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
-                  const statusStyle = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                  const statusLabel = status === 'returned' ? t('returned') : status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                  const statusStyle = status === 'returned' ? 'bg-amber-100 text-amber-800' : status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                  const isActioning = actionOrderId === order.id;
                   return (
                     <div key={order.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
                       <div className="flex justify-between items-start">
@@ -337,6 +397,32 @@ export function Bottles() {
                         >
                           {t('markReady')}
                         </LoadingButton>
+                      )}
+                      {(status === 'ready' || status === 'delivered') && (
+                        <div className="flex gap-2 mt-2">
+                          <LoadingButton
+                            type="button"
+                            size="sm"
+                            variant="warning"
+                            onClick={() => handleReturnOrder(order.id)}
+                            isLoading={isActioning}
+                            disabled={isActioning}
+                            className="flex-1"
+                          >
+                            {t('returnOrder')}
+                          </LoadingButton>
+                          <LoadingButton
+                            type="button"
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDeleteOrder(order.id)}
+                            isLoading={isActioning}
+                            disabled={isActioning}
+                            className="flex-1"
+                          >
+                            {t('delete')}
+                          </LoadingButton>
+                        </div>
                       )}
                     </div>
                   );
@@ -366,6 +452,10 @@ export function Bottles() {
                         })
                         .filter(Boolean)
                         .join(', ') || '-';
+                      const status = ordersService.getDeliveryStatus(order);
+                      const statusStyle = status === 'returned' ? 'bg-amber-100 text-amber-800' : status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                      const statusLabel = status === 'returned' ? t('returned') : status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                      const isActioning = actionOrderId === order.id;
                       return (
                         <tr key={order.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 font-medium">{order.orderNumber ?? order.id}</td>
@@ -373,17 +463,10 @@ export function Bottles() {
                           <td className="px-4 py-2">{productSummary}</td>
                           <td className="px-4 py-2">{totalQty}</td>
                           <td className="px-4 py-2">
-                            {(() => {
-                              const status = ordersService.getDeliveryStatus(order);
-                              const style = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
-                              const label = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
-                              return (
-                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${style}`}>{label}</span>
-                              );
-                            })()}
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusStyle}`}>{statusLabel}</span>
                           </td>
                           <td className="px-4 py-2 text-right">
-                            {ordersService.getDeliveryStatus(order) === 'pending' && (
+                            {status === 'pending' && (
                               <LoadingButton
                                 type="button"
                                 size="sm"
@@ -393,6 +476,30 @@ export function Bottles() {
                               >
                                 {t('markReady')}
                               </LoadingButton>
+                            )}
+                            {(status === 'ready' || status === 'delivered') && (
+                              <div className="flex gap-1 justify-end">
+                                <LoadingButton
+                                  type="button"
+                                  size="sm"
+                                  variant="warning"
+                                  onClick={() => handleReturnOrder(order.id)}
+                                  isLoading={isActioning}
+                                  disabled={isActioning}
+                                >
+                                  {t('returnOrder')}
+                                </LoadingButton>
+                                <LoadingButton
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  isLoading={isActioning}
+                                  disabled={isActioning}
+                                >
+                                  {t('delete')}
+                                </LoadingButton>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -553,8 +660,9 @@ export function Bottles() {
                       .filter(Boolean)
                       .join(', ') || '-';
                     const status = ordersService.getDeliveryStatus(order);
-                    const statusLabel = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
-                    const statusStyle = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                    const statusLabel = status === 'returned' ? t('returned') : status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                    const statusStyle = status === 'returned' ? 'bg-amber-100 text-amber-800' : status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                    const isActioning = actionOrderId === order.id;
                     return (
                       <div key={order.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
                         <div className="flex justify-between items-start">
@@ -574,6 +682,32 @@ export function Bottles() {
                           >
                             {t('markReady')}
                           </LoadingButton>
+                        )}
+                        {(status === 'ready' || status === 'delivered') && (
+                          <div className="flex gap-2 mt-2">
+                            <LoadingButton
+                              type="button"
+                              size="sm"
+                              variant="warning"
+                              onClick={() => handleReturnOrder(order.id)}
+                              isLoading={isActioning}
+                              disabled={isActioning}
+                              className="flex-1"
+                            >
+                              {t('returnOrder')}
+                            </LoadingButton>
+                            <LoadingButton
+                              type="button"
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteOrder(order.id)}
+                              isLoading={isActioning}
+                              disabled={isActioning}
+                              className="flex-1"
+                            >
+                              {t('delete')}
+                            </LoadingButton>
+                          </div>
                         )}
                       </div>
                     );
@@ -604,6 +738,10 @@ export function Bottles() {
                         })
                         .filter(Boolean)
                         .join(', ') || '-';
+                      const status = ordersService.getDeliveryStatus(order);
+                      const statusStyle = status === 'returned' ? 'bg-amber-100 text-amber-800' : status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
+                      const statusLabel = status === 'returned' ? t('returned') : status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
+                      const isActioning = actionOrderId === order.id;
                       return (
                         <tr key={order.id} className="hover:bg-gray-50">
                           <td className="px-4 py-2 font-medium">{order.orderNumber ?? order.id}</td>
@@ -611,19 +749,10 @@ export function Bottles() {
                           <td className="px-4 py-2">{productSummary}</td>
                           <td className="px-4 py-2">{totalQty}</td>
                           <td className="px-4 py-2">
-                            {(() => {
-                              const status = ordersService.getDeliveryStatus(order);
-                              const style = status === 'delivered' ? 'bg-green-100 text-green-800' : status === 'ready' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800';
-                              const label = status === 'delivered' ? t('delivered') : status === 'ready' ? t('ready') : t('pending');
-                              return (
-                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${style}`}>
-                                  {label}
-                                </span>
-                              );
-                            })()}
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusStyle}`}>{statusLabel}</span>
                           </td>
                           <td className="px-4 py-2 text-right">
-                            {ordersService.getDeliveryStatus(order) === 'pending' && (
+                            {status === 'pending' && (
                               <LoadingButton
                                 type="button"
                                 size="sm"
@@ -633,6 +762,30 @@ export function Bottles() {
                               >
                                 {t('markReady')}
                               </LoadingButton>
+                            )}
+                            {(status === 'ready' || status === 'delivered') && (
+                              <div className="flex gap-1 justify-end">
+                                <LoadingButton
+                                  type="button"
+                                  size="sm"
+                                  variant="warning"
+                                  onClick={() => handleReturnOrder(order.id)}
+                                  isLoading={isActioning}
+                                  disabled={isActioning}
+                                >
+                                  {t('returnOrder')}
+                                </LoadingButton>
+                                <LoadingButton
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  isLoading={isActioning}
+                                  disabled={isActioning}
+                                >
+                                  {t('delete')}
+                                </LoadingButton>
+                              </div>
                             )}
                           </td>
                         </tr>

@@ -75,32 +75,45 @@ export function ReturnBottles() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
-  const handleReturnSubmit = async (customerId, quantity, notes, productId) => {
+  const handleReturnSubmit = async (customerId, items, notes) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
     try {
       const maxReturnable = getMaxReturnable(customerId);
-      if (maxReturnable !== undefined && quantity > maxReturnable) {
-        dispatch(setError(`Cannot return ${quantity} bottles. Customer only has ${maxReturnable} returnable bottles outstanding.`));
+      const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
+      if (maxReturnable !== undefined && totalQuantity > maxReturnable) {
+        dispatch(setError(`Cannot return ${totalQuantity} bottles. Customer only has ${maxReturnable} returnable bottles outstanding.`));
         dispatch(setLoading(false));
         return;
       }
 
-      const newTransaction = await bottlesService.createTransaction(
-        customerId,
-        'returned',
-        quantity,
-        notes,
-        user?.id || null,
-        transactions,
-        productId || undefined
-      );
+      // Group by productId to create one transaction per product (combines duplicate product lines)
+      const grouped = items.reduce((acc, it) => {
+        const key = it.productId;
+        if (!acc[key]) acc[key] = { productId: it.productId, quantity: 0 };
+        acc[key].quantity += it.quantity;
+        return acc;
+      }, {});
+      const itemsToProcess = Object.values(grouped);
 
-      dispatch(addTransaction(newTransaction));
+      let currentTransactions = [...transactions];
+      for (const item of itemsToProcess) {
+        const newTransaction = await bottlesService.createTransaction(
+          customerId,
+          'returned',
+          item.quantity,
+          notes,
+          user?.id || null,
+          currentTransactions,
+          item.productId || undefined
+        );
+        currentTransactions = [...currentTransactions, newTransaction];
+        dispatch(addTransaction(newTransaction));
 
-      if (productId) {
-        const updatedProduct = await productsService.increaseStockForReturn(productId, quantity, products);
-        dispatch(updateProductInState(updatedProduct));
+        if (item.productId) {
+          const updatedProduct = await productsService.increaseStockForReturn(item.productId, item.quantity, products);
+          dispatch(updateProductInState(updatedProduct));
+        }
       }
     } catch (err) {
       dispatch(setError(err.message));
@@ -180,7 +193,7 @@ export function ReturnBottles() {
           <div>
             {selectedCustomerId && (
               <>
-                <CustomerBottleBalance customerId={selectedCustomerId} />
+                <CustomerBottleBalance customerId={selectedCustomerId} headingKey="productBalance" />
                 <div className="mt-6">
                   <TransactionHistory customerId={selectedCustomerId} />
                 </div>

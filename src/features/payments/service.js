@@ -115,8 +115,8 @@ export async function createPayment(data, existingPayments, createdBy, currentCa
  * @returns {import('./types.js').CustomerBalance} Customer balance
  */
 export function calculateCustomerBalance(customerId, orders, payments, customers) {
-  // Get all orders for this customer
-  const customerOrders = (orders || []).filter((o) => o && o.customerId === customerId);
+  // Get all orders for this customer (exclude returned orders)
+  const customerOrders = (orders || []).filter((o) => o && o.customerId === customerId && o.status !== 'returned');
   
   // Calculate total from orders (sum of totalAmount) - round to 2 decimal places
   // Each order's totalAmount represents the full amount the customer owes for that order

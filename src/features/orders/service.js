@@ -480,12 +480,13 @@ export function getOrderDeliveryDate(order) {
 }
 
 /**
- * Get delivery status for display: pending | ready | delivered
+ * Get delivery status for display: pending | ready | delivered | returned
  * @param {import('./types.js').Order} order - Order
- * @returns {'pending' | 'ready' | 'delivered'}
+ * @returns {'pending' | 'ready' | 'delivered' | 'returned'}
  */
 export function getDeliveryStatus(order) {
   const s = order.status;
+  if (s === 'returned') return 'returned';
   if (s === 'delivered' || s === 'shipped') return 'delivered';
   if (s === 'ready') return 'ready';
   return 'pending';
@@ -499,6 +500,7 @@ export function getDeliveryStatus(order) {
  */
 export function getOrdersPendingDelivery(orders, deliveryDate) {
   return orders.filter((o) => {
+    if (getDeliveryStatus(o) === 'returned') return false;
     if (getDeliveryStatus(o) !== 'pending') return false;
     if (deliveryDate != null && deliveryDate !== '') {
       if (getOrderDeliveryDate(o) !== deliveryDate) return false;
@@ -515,6 +517,7 @@ export function getOrdersPendingDelivery(orders, deliveryDate) {
  */
 export function getOrdersReadyForDelivery(orders, deliveryDate) {
   return orders.filter((o) => {
+    if (getDeliveryStatus(o) === 'returned') return false;
     if (getDeliveryStatus(o) !== 'ready') return false;
     if (deliveryDate != null && deliveryDate !== '') {
       if (getOrderDeliveryDate(o) !== deliveryDate) return false;
@@ -531,6 +534,7 @@ export function getOrdersReadyForDelivery(orders, deliveryDate) {
  */
 export function getOrdersDelivered(orders, deliveryDate) {
   return orders.filter((o) => {
+    if (getDeliveryStatus(o) === 'returned') return false;
     if (getDeliveryStatus(o) !== 'delivered') return false;
     if (deliveryDate == null || deliveryDate === '') return true;
     const deliveredDate = o.deliveredAt
@@ -645,6 +649,244 @@ export async function markOrderDelivered(
     order: updatedOrder,
     payment,
     newCashBalance: typeof newCashBalance === 'number' ? newCashBalance : undefined,
+  };
+}
+
+/**
+ * Restore product stock when order is deleted or returned
+ * @param {{ productId: string, quantity: number }[]} lineItems - Order line items
+ * @param {import('../products/types.js').Product[]} existingProducts - Existing products
+ * @returns {{ updatedProducts: import('../products/types.js').Product[], changed: boolean }}
+ */
+function restoreStockForLineItems(lineItems, existingProducts) {
+  let updatedProducts = [...existingProducts];
+  let changed = false;
+  for (const item of lineItems) {
+    const productIndex = updatedProducts.findIndex((p) => p.id === item.productId);
+    if (productIndex === -1) continue;
+    const product = updatedProducts[productIndex];
+    const trackStock = product.trackStock !== false;
+    const qty = item.quantity || 0;
+    if (trackStock && qty > 0) {
+      const currentStock = (product.currentStock ?? 0) + qty;
+      const readyToShip = (product.readyToShip ?? 0) + qty;
+      updatedProducts[productIndex] = {
+        ...product,
+        currentStock,
+        readyToShip,
+        updatedAt: new Date().toISOString(),
+      };
+      changed = true;
+    }
+  }
+  return { updatedProducts, changed };
+}
+
+/**
+ * Find the bottle transaction created for an order (issued, notes like "Order #X")
+ * @param {import('./types.js').Order} order - Order
+ * @param {import('../bottles/types.js').BottleTransaction[]} transactions - All transactions
+ * @returns {import('../bottles/types.js').BottleTransaction | null}
+ */
+function findBottleTransactionForOrder(order, transactions) {
+  const orderNote = `Order #${order.orderNumber}`;
+  return transactions.find(
+    (t) =>
+      t.customerId === order.customerId &&
+      t.type === 'issued' &&
+      (t.notes === orderNote || (t.notes && t.notes.includes(orderNote)))
+  ) || null;
+}
+
+/**
+ * Delete an order and reverse all related records (bottle tx, payment, cash, stock)
+ * @param {string} orderId - Order ID
+ * @param {import('./types.js').Order[]} existingOrders - Existing orders
+ * @param {import('../bottles/types.js').BottleTransaction[]} existingBottleTransactions - All bottle transactions
+ * @param {import('../payments/types.js').Payment[]} existingPayments - All payments
+ * @param {import('../products/types.js').Product[]} existingProducts - All products
+ * @returns {Promise<{ removedOrder: import('./types.js').Order, removedTransactionId?: string, removedPaymentId?: string, newCashBalance: import('./types.js').CashBalance, products: import('../products/types.js').Product[] }>}
+ */
+export async function deleteOrder(
+  orderId,
+  existingOrders,
+  existingBottleTransactions,
+  existingPayments,
+  existingProducts
+) {
+  const orderIndex = existingOrders.findIndex((o) => o.id === orderId);
+  if (orderIndex === -1) throw new Error('Order not found');
+  const order = existingOrders[orderIndex];
+
+  if (order.status === 'returned') {
+    throw new Error('Cannot delete an order that has already been returned');
+  }
+
+  const lineItems = getOrderLineItems(order);
+  const amountPaid = order.amountPaid || 0;
+
+  // 1. Remove bottle transaction for this order
+  const bottleTx = findBottleTransactionForOrder(order, existingBottleTransactions);
+  if (bottleTx) {
+    await bottlesService.deleteTransaction(bottleTx.id, existingBottleTransactions);
+  }
+
+  // 2. Remove all payments for this order and reverse cash
+  const orderPayments = existingPayments.filter((p) => p.orderId === orderId);
+  const totalPaidForOrder = orderPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const amountToReverse = totalPaidForOrder > 0 ? totalPaidForOrder : amountPaid;
+  let updatedPayments = existingPayments;
+  if (orderPayments.length > 0) {
+    updatedPayments = existingPayments.filter((p) => p.orderId !== orderId);
+    const { savePayments } = await import('../payments/service.js');
+    await savePayments(updatedPayments);
+  }
+
+  // 3. Reverse cash balance
+  const currentBalance = await loadCashBalance();
+  const currentAmount = typeof currentBalance === 'object' ? currentBalance.amount : currentBalance;
+  const newAmount = Math.max(0, currentAmount - amountToReverse);
+  const newCashBalance = {
+    amount: newAmount,
+    lastUpdated: new Date().toISOString(),
+  };
+  await saveCashBalance(newCashBalance);
+
+  // Also update cash service (cash_current_balance) for consistency
+  if (amountToReverse > 0) {
+    const { loadCurrentBalance, updateCashBalance } = await import('../cash/service.js');
+    const cashCurrent = await loadCurrentBalance();
+    const cashNum = typeof cashCurrent === 'number' ? cashCurrent : (cashCurrent?.amount ?? 0);
+    await updateCashBalance(-amountToReverse, cashNum);
+  }
+
+  // 4. Restore product stock
+  let updatedProducts = existingProducts;
+  const { updatedProducts: restored, changed } = restoreStockForLineItems(lineItems, existingProducts);
+  if (changed) {
+    await storageService.setItem('products_data', restored);
+    updatedProducts = restored;
+  }
+
+  // 5. Remove order
+  const updatedOrders = existingOrders.filter((o) => o.id !== orderId);
+  await saveOrders(updatedOrders);
+
+  return {
+    removedOrder: order,
+    removedTransactionId: bottleTx?.id,
+    removedPaymentIds: orderPayments.map((p) => p.id),
+    newCashBalance,
+    products: updatedProducts,
+  };
+}
+
+/**
+ * Return an order (mark as returned, create bottle returns, reverse payment/cash, restore stock)
+ * @param {string} orderId - Order ID
+ * @param {import('./types.js').Order[]} existingOrders - Existing orders
+ * @param {import('../bottles/types.js').BottleTransaction[]} existingBottleTransactions - All bottle transactions
+ * @param {import('../payments/types.js').Payment[]} existingPayments - All payments
+ * @param {import('../products/types.js').Product[]} existingProducts - All products
+ * @param {string} [returnedBy] - User who returned the order
+ * @returns {Promise<{ order: import('./types.js').Order, newTransactions: import('../bottles/types.js').BottleTransaction[], removedPaymentId?: string, newCashBalance: import('./types.js').CashBalance, products: import('../products/types.js').Product[] }>}
+ */
+export async function returnOrder(
+  orderId,
+  existingOrders,
+  existingBottleTransactions,
+  existingPayments,
+  existingProducts,
+  returnedBy
+) {
+  const orderIndex = existingOrders.findIndex((o) => o.id === orderId);
+  if (orderIndex === -1) throw new Error('Order not found');
+  const order = existingOrders[orderIndex];
+
+  if (order.status === 'returned') {
+    throw new Error('Order has already been returned');
+  }
+
+  const lineItems = getOrderLineItems(order);
+  const amountPaid = order.amountPaid || 0;
+
+  // 1. Create bottle return transactions for each product line
+  let currentTransactions = [...existingBottleTransactions];
+  const newTransactions = [];
+  for (const item of lineItems) {
+    const product = existingProducts.find((p) => p.id === item.productId);
+    if (product && product.isReturnable !== false) {
+      const tx = await bottlesService.createTransaction(
+        order.customerId,
+        'returned',
+        item.quantity,
+        `Order #${order.orderNumber} returned`,
+        returnedBy || null,
+        currentTransactions,
+        item.productId
+      );
+      currentTransactions = [...currentTransactions, tx];
+      newTransactions.push(tx);
+    }
+  }
+
+  // 2. Remove all payments for this order and reverse cash
+  const orderPaymentsReturn = existingPayments.filter((p) => p.orderId === orderId);
+  const totalPaidForOrderReturn = orderPaymentsReturn.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const amountToReverseReturn = totalPaidForOrderReturn > 0 ? totalPaidForOrderReturn : amountPaid;
+  let updatedPaymentsReturn = existingPayments;
+  if (orderPaymentsReturn.length > 0) {
+    updatedPaymentsReturn = existingPayments.filter((p) => p.orderId !== orderId);
+    const { savePayments } = await import('../payments/service.js');
+    await savePayments(updatedPaymentsReturn);
+  }
+
+  // 3. Reverse cash balance
+  const currentBalanceReturn = await loadCashBalance();
+  const currentAmountReturn = typeof currentBalanceReturn === 'object' ? currentBalanceReturn.amount : currentBalanceReturn;
+  const newAmountReturn = Math.max(0, currentAmountReturn - amountToReverseReturn);
+  const newCashBalanceReturn = {
+    amount: newAmountReturn,
+    lastUpdated: new Date().toISOString(),
+  };
+  await saveCashBalance(newCashBalanceReturn);
+
+  if (amountToReverseReturn > 0) {
+    const { loadCurrentBalance, updateCashBalance } = await import('../cash/service.js');
+    const cashCurrent = await loadCurrentBalance();
+    const cashNum = typeof cashCurrent === 'number' ? cashCurrent : (cashCurrent?.amount ?? 0);
+    await updateCashBalance(-amountToReverseReturn, cashNum);
+  }
+
+  // 4. Restore product stock for returnable products
+  let updatedProducts = existingProducts;
+  if (existingProducts.length > 0) {
+    const { updatedProducts: restored, changed } = restoreStockForLineItems(lineItems, existingProducts);
+    if (changed) {
+      await storageService.setItem('products_data', restored);
+      updatedProducts = restored;
+    }
+  }
+
+  // 5. Mark order as returned
+  const now = new Date().toISOString();
+  const updatedOrder = {
+    ...order,
+    status: 'returned',
+    returnedAt: now,
+    returnedBy: returnedBy || null,
+    updatedAt: now,
+  };
+  const updatedOrders = [...existingOrders];
+  updatedOrders[orderIndex] = updatedOrder;
+  await saveOrders(updatedOrders);
+
+  return {
+    order: updatedOrder,
+    newTransactions,
+    removedPaymentIds: orderPaymentsReturn.map((p) => p.id),
+    newCashBalance: newCashBalanceReturn,
+    products: updatedProducts,
   };
 }
 
