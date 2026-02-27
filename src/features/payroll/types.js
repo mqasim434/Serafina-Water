@@ -5,8 +5,8 @@
  */
 
 /**
- * Pay type: monthly or bi-monthly
- * @typedef {'monthly' | 'bimonthly'} PayType
+ * Pay type: monthly or bi-weekly
+ * @typedef {'monthly' | 'biweekly'} PayType
  */
 
 /**
@@ -14,7 +14,7 @@
  * @typedef {Object} Employee
  * @property {string} id - Unique ID
  * @property {string} name - Employee name
- * @property {PayType} payType - Monthly or Bi-monthly
+ * @property {PayType} payType - Monthly or Bi-weekly
  * @property {number} payAmount - Pay amount (Rs.)
  * @property {number[]} payDates - Pay dates (e.g. [1, 15] for 1st and 15th)
  * @property {string} startDate - Start date (YYYY-MM-DD)

@@ -301,7 +301,7 @@ export function CustomerForm({ customer, onSubmit, onCancel, isLoading }) {
           <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('productPrices') || t('bottlePrices')}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {activeProducts.map((product) => (
-              <div key={product.id}>
+              <div key={product.id} className="flex flex-col justify-between">
                 <label
                   htmlFor={`price_${product.id}`}
                   className="block text-sm font-medium text-gray-700"

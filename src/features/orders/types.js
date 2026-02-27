@@ -33,7 +33,7 @@
  * @property {string} [deliveryProofPhotoUrl] - ImageKit URL of delivery proof photo (one per delivery)
  * @property {string} [deliveryProofFileId] - ImageKit file ID (for 6-week auto-delete)
  * @property {string} [deliveredAt] - When order was marked delivered (ISO string)
- * @property {string} [deliveredBy] - User ID who marked delivered
+ * @property {string} [deliveredBy] - Name of person who delivered (or user ID for legacy)
  * @property {string} [notes] - Optional notes
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the order

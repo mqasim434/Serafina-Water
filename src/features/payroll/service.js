@@ -58,16 +58,14 @@ function computeNextPayDate(lastPaidOrStartDate, payType, payDates) {
     return toDateStr(d);
   }
 
-  // bimonthly: two dates per month (e.g. 1 and 15)
-  const sorted = [...payDates].sort((a, b) => a - b);
-  for (const pd of sorted) {
-    if (day < pd) {
-      d.setDate(pd);
-      return toDateStr(d);
-    }
+  // biweekly: every 14 days from last paid/start date
+  if (payType === 'biweekly') {
+    d.setDate(d.getDate() + 14);
+    return toDateStr(d);
   }
-  d.setMonth(month + 1);
-  d.setDate(sorted[0] || 1);
+
+  // Legacy bimonthly: treat as biweekly (every 14 days) for backwards compatibility
+  d.setDate(d.getDate() + 14);
   return toDateStr(d);
 }
 

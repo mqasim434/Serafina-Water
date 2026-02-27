@@ -25,7 +25,7 @@ import { expensesService } from '../features/expenses/slice.js';
 import { setCashBalance } from '../features/orders/slice.js';
 import * as cashService from '../features/cash/service.js';
 
-const PAY_TYPES = { MONTHLY: 'monthly', BIMONTHLY: 'bimonthly' };
+const PAY_TYPES = { MONTHLY: 'monthly', BIWEEKLY: 'biweekly' };
 
 export function Payroll() {
   const dispatch = useDispatch();
@@ -159,7 +159,7 @@ export function Payroll() {
                   <tr key={emp.id} className={!emp.isActive ? 'bg-gray-50' : 'hover:bg-gray-50'}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{emp.name}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {emp.payType === 'bimonthly' ? t('bimonthly') : t('monthly')}
+                      {(emp.payType === 'biweekly' || emp.payType === 'bimonthly') ? t('biweekly') : t('monthly')}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       Rs. {(emp.payAmount || 0).toLocaleString()}
@@ -174,82 +174,89 @@ export function Payroll() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {emp.isActive && (
+                      <div className="flex items-center justify-end gap-2">
+                        {emp.isActive && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setMarkPaidEmployee(emp)}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                              {t('markPaid')}
+                            </button>
+                            <span className="h-4 w-px bg-gray-300 flex-shrink-0" aria-hidden />
+                          </>
+                        )}
                         <button
                           type="button"
-                          onClick={() => setMarkPaidEmployee(emp)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
+                          onClick={() => setPaymentHistoryEmployee(emp)}
+                          className="text-gray-600 hover:text-gray-800 text-sm"
                         >
-                          {t('markPaid')}
+                          {t('paymentHistory')}
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => setPaymentHistoryEmployee(emp)}
-                        className="text-gray-600 hover:text-gray-800 text-sm mr-3"
-                      >
-                        {t('paymentHistory')}
-                      </button>
-                      {emp.isActive ? (
+                        <span className="h-4 w-px bg-gray-300 flex-shrink-0" aria-hidden />
+                        {emp.isActive ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!window.confirm(t('confirmDeactivateEmployee') || 'Are you sure you want to deactivate this employee?')) return;
+                              dispatch(setLoading(true));
+                              dispatch(setError(null));
+                              try {
+                                const updated = await payrollService.deactivateEmployee(emp.id, employees);
+                                dispatch(updateEmployeeInState(updated));
+                              } catch (err) {
+                                dispatch(setError(err.message));
+                              } finally {
+                                dispatch(setLoading(false));
+                              }
+                            }}
+                            className="text-amber-600 hover:text-amber-800 text-sm"
+                          >
+                            {t('deactivate')}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!window.confirm(t('confirmActivateEmployee') || 'Are you sure you want to activate this employee?')) return;
+                              dispatch(setLoading(true));
+                              dispatch(setError(null));
+                              try {
+                                const updated = await payrollService.activateEmployee(emp.id, employees);
+                                dispatch(updateEmployeeInState(updated));
+                              } catch (err) {
+                                dispatch(setError(err.message));
+                              } finally {
+                                dispatch(setLoading(false));
+                              }
+                            }}
+                            className="text-green-600 hover:text-green-800 text-sm"
+                          >
+                            {t('activate')}
+                          </button>
+                        )}
+                        <span className="h-4 w-px bg-gray-300 flex-shrink-0" aria-hidden />
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!window.confirm(t('confirmDeactivateEmployee') || 'Are you sure you want to deactivate this employee?')) return;
+                            if (!window.confirm(t('confirmDeleteEmployee') || 'Are you sure you want to permanently delete this employee?')) return;
                             dispatch(setLoading(true));
                             dispatch(setError(null));
                             try {
-                              const updated = await payrollService.deactivateEmployee(emp.id, employees);
-                              dispatch(updateEmployeeInState(updated));
+                              await payrollService.deleteEmployee(emp.id, employees);
+                              dispatch(removeEmployee(emp.id));
                             } catch (err) {
                               dispatch(setError(err.message));
                             } finally {
                               dispatch(setLoading(false));
                             }
                           }}
-                          className="text-amber-600 hover:text-amber-800 text-sm"
+                          className="text-red-600 hover:text-red-800 text-sm"
                         >
-                          {t('deactivate')}
+                          {t('delete')}
                         </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!window.confirm(t('confirmActivateEmployee') || 'Are you sure you want to activate this employee?')) return;
-                            dispatch(setLoading(true));
-                            dispatch(setError(null));
-                            try {
-                              const updated = await payrollService.activateEmployee(emp.id, employees);
-                              dispatch(updateEmployeeInState(updated));
-                            } catch (err) {
-                              dispatch(setError(err.message));
-                            } finally {
-                              dispatch(setLoading(false));
-                            }
-                          }}
-                          className="text-green-600 hover:text-green-800 text-sm mr-3"
-                        >
-                          {t('activate')}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!window.confirm(t('confirmDeleteEmployee') || 'Are you sure you want to permanently delete this employee?')) return;
-                          dispatch(setLoading(true));
-                          dispatch(setError(null));
-                          try {
-                            await payrollService.deleteEmployee(emp.id, employees);
-                            dispatch(removeEmployee(emp.id));
-                          } catch (err) {
-                            dispatch(setError(err.message));
-                          } finally {
-                            dispatch(setLoading(false));
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-800 text-sm ml-1"
-                      >
-                        {t('delete')}
-                      </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -372,7 +379,7 @@ function AddEmployeeForm({ onClose, onSubmit, isLoading, t }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="monthly">{t('monthly')}</option>
-              <option value="bimonthly">{t('bimonthly')}</option>
+              <option value="biweekly">{t('biweekly')}</option>
             </select>
           </div>
           <div>

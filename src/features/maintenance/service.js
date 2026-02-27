@@ -62,7 +62,7 @@ export async function createEquipmentTask(data, existingTasks) {
   return task;
 }
 
-export async function markEquipmentDone(taskId, doneDate, notes, doneBy, existingTasks, existingHistory) {
+export async function markEquipmentDone(taskId, doneDate, notes, doneBy, existingTasks, existingHistory, attachmentUrl, attachmentFileId) {
   const idx = existingTasks.findIndex((t) => t.id === taskId);
   if (idx === -1) throw new Error('Task not found');
   const task = existingTasks[idx];
@@ -84,6 +84,8 @@ export async function markEquipmentDone(taskId, doneDate, notes, doneBy, existin
     taskId,
     doneDate,
     notes: (notes || '').trim() || null,
+    ...(attachmentUrl ? { attachmentUrl } : {}),
+    ...(attachmentFileId ? { attachmentFileId } : {}),
     doneBy: doneBy || null,
     createdAt: new Date().toISOString(),
   };

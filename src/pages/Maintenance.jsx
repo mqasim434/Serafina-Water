@@ -296,7 +296,7 @@ export function Maintenance() {
         <MarkDoneModal
           task={markDoneTask}
           onClose={() => setMarkDoneTask(null)}
-          onSubmit={async (doneDate, notes) => {
+          onSubmit={async (doneDate, notes, attachmentUrl, attachmentFileId) => {
             dispatch(setLoading(true));
             dispatch(setError(null));
             try {
@@ -306,7 +306,9 @@ export function Maintenance() {
                 notes,
                 user?.id,
                 tasks,
-                equipmentHistory
+                equipmentHistory,
+                attachmentUrl,
+                attachmentFileId
               );
               dispatch(updateTaskInState(task));
               dispatch(setEquipmentHistoryFull(history));
@@ -614,18 +616,31 @@ function MarkDoneModal({ task, onClose, onSubmit, isLoading }) {
   const today = cashService.getTodayDate();
   const [doneDate, setDoneDate] = useState(today);
   const [notes, setNotes] = useState('');
+  const [attachmentFile, setAttachmentFile] = useState(null);
+  const [err, setErr] = useState({});
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    let attachmentUrl = null;
+    let attachmentFileId = null;
+    if (attachmentFile && isImageKitConfigured()) {
+      try {
+        const res = await uploadDeliveryProof(attachmentFile, 'maintenance');
+        attachmentUrl = res.url;
+        attachmentFileId = res.fileId;
+      } catch (e) {
+        setErr({ attachment: e.message });
+        return;
+      }
+    }
+    onSubmit(doneDate, notes, attachmentUrl, attachmentFileId);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
         <h3 className="text-lg font-semibold mb-4">{t('markDone')} — {task.itemName}</h3>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit(doneDate, notes);
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('doneDate')}</label>
             <input
@@ -636,6 +651,18 @@ function MarkDoneModal({ task, onClose, onSubmit, isLoading }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
+          {isImageKitConfigured() && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">{t('attachment')}</label>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setAttachmentFile(e.target.files?.[0] || null)}
+                className="mt-1 block w-full text-sm"
+              />
+              {err.attachment && <p className="text-red-600 text-sm mt-1">{err.attachment}</p>}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('notes')}</label>
             <textarea
@@ -746,14 +773,29 @@ function HistoryModal({ task, history, getUserName, onClose }) {
         {history.length === 0 ? (
           <p className="text-gray-500">{t('noHistory')}</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {history.map((h) => (
-              <li key={h.id} className="flex justify-between items-start py-2 border-b border-gray-100">
-                <div>
-                  <span className="font-medium">{h.doneDate}</span>
-                  {h.notes && <p className="text-sm text-gray-600">{h.notes}</p>}
+              <li key={h.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50/50">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <span className="font-medium">{h.doneDate}</span>
+                    <span className="text-gray-500 text-sm ml-2">({getUserName(h.doneBy)})</span>
+                  </div>
                 </div>
-                <span className="text-sm text-gray-500">{getUserName(h.doneBy)}</span>
+                {h.notes && <p className="text-sm text-gray-600 mt-1">{h.notes}</p>}
+                {h.attachmentUrl && (
+                  <div className="mt-2">
+                    {h.attachmentUrl.match(/\.(pdf)$/i) ? (
+                      <a href={h.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline">
+                        {t('viewPdf')}
+                      </a>
+                    ) : (
+                      <a href={h.attachmentUrl} target="_blank" rel="noopener noreferrer" className="block rounded overflow-hidden border border-gray-200 max-w-[200px]">
+                        <img src={h.attachmentUrl} alt="" className="w-full h-auto object-contain max-h-32" />
+                      </a>
+                    )}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

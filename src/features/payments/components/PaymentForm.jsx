@@ -161,6 +161,7 @@ export function PaymentForm({
           <option value="cash">{t('cash')}</option>
           <option value="bank">{t('bankTransfer')}</option>
           <option value="mobile">{t('mobilePayment')}</option>
+          <option value="jazzcash">{t('jazzcash')}</option>
           <option value="other">{t('other')}</option>
         </select>
       </div>

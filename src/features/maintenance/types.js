@@ -30,6 +30,8 @@
  * @property {string} taskId - Parent task ID
  * @property {string} doneDate - Date done (YYYY-MM-DD)
  * @property {string} [notes] - Notes
+ * @property {string} [attachmentUrl] - Image/attachment URL (ImageKit)
+ * @property {string} [attachmentFileId] - ImageKit file ID
  * @property {string} doneBy - User ID who marked done
  * @property {string} createdAt - Timestamp
  */

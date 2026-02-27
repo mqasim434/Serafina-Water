@@ -2,8 +2,10 @@
  * DeliveredOrderDetails – read-only view of a delivered order with proof photo.
  */
 
+import { useSelector } from 'react-redux';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
 import { ordersService } from '../../orders/slice.js';
+import { getDeliveredByDisplay } from '../utils.js';
 
 /**
  * @param {Object} props
@@ -14,7 +16,9 @@ import { ordersService } from '../../orders/slice.js';
  */
 export function DeliveredOrderDetails({ order, customer, products, onClose }) {
   const { t } = useTranslation();
+  const { items: users } = useSelector((state) => state.users);
   const lineItems = ordersService.getOrderLineItems(order);
+  const deliveredByDisplay = getDeliveredByDisplay(order.deliveredBy, users);
   const totalQty = ordersService.getOrderTotalQuantity(order);
   const productSummary = lineItems
     .map((item) => {
@@ -87,6 +91,13 @@ export function DeliveredOrderDetails({ order, customer, products, onClose }) {
             <div>
               <p className="text-sm font-medium text-gray-500">{t('deliveredAt') || 'Delivered at'}</p>
               <p className="text-gray-900 text-sm">{deliveredAt}</p>
+            </div>
+          )}
+
+          {deliveredByDisplay && (
+            <div>
+              <p className="text-sm font-medium text-gray-500">{t('deliveredBy')}</p>
+              <p className="text-gray-900 text-sm">{deliveredByDisplay}</p>
             </div>
           )}
 

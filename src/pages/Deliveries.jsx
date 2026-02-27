@@ -15,9 +15,12 @@ import { setOrders, updateOrderInState, setLoading, setError, setCashBalance } f
 import { addPayment, setPayments } from '../features/payments/slice.js';
 import { setCustomers } from '../features/customers/slice.js';
 import { setProducts } from '../features/products/slice.js';
+import { setUsers } from '../features/users/slice.js';
 import { customersService } from '../features/customers/slice.js';
 import { productsService } from '../features/products/slice.js';
 import { paymentsService } from '../features/payments/slice.js';
+import { usersService } from '../features/users/slice.js';
+import { getDeliveredByDisplay } from '../features/delivery/utils.js';
 import * as cashService from '../features/cash/service.js';
 
 const TABS = { PENDING: 'pending', READY: 'ready', DELIVERED: 'delivered' };
@@ -29,6 +32,7 @@ export function Deliveries() {
   const { items: customers } = useSelector((state) => state.customers);
   const { items: products } = useSelector((state) => state.products);
   const { items: payments } = useSelector((state) => state.payments);
+  const { items: users } = useSelector((state) => state.users);
   const { user } = useSelector((state) => state.auth);
   const isLoading = useSelector((state) => state.orders.isLoading);
   const error = useSelector((state) => state.orders.error);
@@ -43,16 +47,18 @@ export function Deliveries() {
     async function load() {
       dispatch(setLoading(true));
       try {
-        const [loadedOrders, loadedCustomers, loadedProducts, loadedPayments] = await Promise.all([
+        const [loadedOrders, loadedCustomers, loadedProducts, loadedPayments, loadedUsers] = await Promise.all([
           ordersService.loadOrders(),
           customers.length === 0 ? customersService.loadCustomers() : Promise.resolve(null),
           products.length === 0 ? productsService.loadProducts() : Promise.resolve(null),
           paymentsService.loadPayments(),
+          users.length === 0 ? usersService.loadUsers() : Promise.resolve(null),
         ]);
         dispatch(setOrders(loadedOrders));
         if (loadedCustomers) dispatch(setCustomers(loadedCustomers));
         if (loadedProducts) dispatch(setProducts(loadedProducts));
         if (loadedPayments) dispatch(setPayments(loadedPayments));
+        if (loadedUsers) dispatch(setUsers(loadedUsers));
       } catch (err) {
         dispatch(setError(err.message));
       } finally {
@@ -299,6 +305,9 @@ export function Deliveries() {
                       Rs. {(order.totalAmount || 0).toLocaleString()}
                       {order.deliveredAt && (
                         <> · {new Date(order.deliveredAt).toLocaleDateString()} {new Date(order.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
+                      )}
+                      {getDeliveredByDisplay(order.deliveredBy, users) && (
+                        <> · {t('deliveredBy')}: {getDeliveredByDisplay(order.deliveredBy, users)}</>
                       )}
                     </p>
                   </div>

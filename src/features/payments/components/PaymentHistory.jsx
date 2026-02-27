@@ -43,9 +43,10 @@ export function PaymentHistory({ customerId }) {
           <div key={payment.id} className="p-4 hover:bg-gray-50">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm text-gray-600">{t('paymentMethod')}:</span>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {payment.paymentMethod}
+                    {payment.paymentMethod === 'bank' ? t('bankTransfer') : payment.paymentMethod === 'mobile' ? t('mobilePayment') : payment.paymentMethod === 'jazzcash' ? t('jazzcash') : payment.paymentMethod === 'other' ? t('other') : payment.paymentMethod === 'cash' ? t('cash') : (payment.paymentMethod || '').replace(/^./, (c) => c.toUpperCase())}
                   </span>
                   <span className="text-sm font-medium text-gray-900">
                     Rs. {payment.amount.toLocaleString()}

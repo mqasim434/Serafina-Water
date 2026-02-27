@@ -13,6 +13,7 @@ import { productsService } from '../../../features/products/slice.js';
 import { ordersService } from '../../../features/orders/slice.js';
 import { paymentsService } from '../../../features/payments/slice.js';
 import { bottlesService } from '../../../features/bottles/slice.js';
+import { getDeliveredByDisplay } from '../../../features/delivery/utils.js';
 
 /**
  * @param {Object} props
@@ -173,11 +174,12 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
       String(ordersService.getOrderTotalQuantity(o)),
       `Rs. ${(o.totalAmount ?? 0).toLocaleString()}`,
       new Date(o.createdAt).toLocaleString(),
+      getDeliveredByDisplay(o.deliveredBy, users) || '-',
     ]);
     if (orderRows.length > 0) {
       autoTable(doc, {
         startY: y,
-        head: [['Order', 'Qty', 'Amount', 'Date']],
+        head: [['Order', 'Qty', 'Amount', 'Date', t('deliveredBy')]],
         body: orderRows,
         margin: { left: margin, right: margin },
         headStyles: { fillColor: [59, 130, 246], textColor: 255 },
@@ -451,6 +453,11 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                                 {t('placedBy')}: {getUserName(item.data.createdBy)}
                               </span>
                             )}
+                            {getDeliveredByDisplay(item.data.deliveredBy, users) && (
+                              <span className="block mt-0.5">
+                                {t('deliveredBy')}: {getDeliveredByDisplay(item.data.deliveredBy, users)}
+                              </span>
+                            )}
                           </p>
                         </div>
                         {item.data.deliveryProofPhotoUrl && (
@@ -512,9 +519,10 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
           ) : (
             customerPayments.map((payment) => (
               <div key={payment.id} className="p-4 hover:bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 capitalize">
-                    {payment.paymentMethod}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-sm text-gray-600">{t('paymentMethod')}:</span>
+                  <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                    {payment.paymentMethod === 'bank' ? t('bankTransfer') : payment.paymentMethod === 'mobile' ? t('mobilePayment') : payment.paymentMethod === 'jazzcash' ? t('jazzcash') : payment.paymentMethod === 'other' ? t('other') : payment.paymentMethod === 'cash' ? t('cash') : (payment.paymentMethod || '').replace(/^./, (c) => c.toUpperCase())}
                   </span>
                   <span className="text-sm font-medium text-gray-900">
                     Rs. {payment.amount.toLocaleString()}
