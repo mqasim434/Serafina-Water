@@ -1,18 +1,19 @@
 /**
  * Expense Form Component
- * 
- * Form for adding expenses
+ *
+ * Form for adding expenses with optional image upload
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from '../../../shared/hooks/useTranslation.js';
 import { LoadingButton } from '../../../shared/components/LoadingButton.jsx';
 import * as cashService from '../../../features/cash/service.js';
+import { isImageKitConfigured, uploadExpenseImage } from '../../../features/delivery/imagekit.js';
 
 /**
  * Expense Form props
  * @typedef {Object} ExpenseFormProps
- * @property {function(string, string, number, string): void} onSubmit - Submit handler (title, description, amount, date)
+ * @property {function(string, string, number, string, string|null, string|null): void} onSubmit - Submit handler (title, description, amount, date, imageUrl, imageFileId)
  * @property {function(): void} onCancel - Cancel handler
  * @property {boolean} isLoading - Loading state
  * @property {number} [availableCash] - Available cash balance
@@ -25,6 +26,7 @@ import * as cashService from '../../../features/cash/service.js';
 export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
   const { t } = useTranslation();
   const today = cashService.getTodayDate();
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -33,6 +35,10 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
     date: today,
   });
 
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -49,7 +55,32 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    setUploadError('');
+    if (!file) {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setUploadError(t('pleaseSelectImage') || 'Please select an image file');
+      return;
+    }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const amount = parseFloat(formData.amount);
@@ -72,7 +103,24 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
       return;
     }
 
-    onSubmit(formData.title.trim(), formData.description.trim(), amount, formData.date);
+    let imageUrl = null;
+    let imageFileId = null;
+    if (photoFile && isImageKitConfigured()) {
+      setIsUploading(true);
+      setUploadError('');
+      try {
+        const result = await uploadExpenseImage(photoFile);
+        imageUrl = result.url;
+        imageFileId = result.fileId;
+      } catch (err) {
+        setUploadError(err.message || t('uploadFailed') || 'Failed to upload image');
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
+    onSubmit(formData.title.trim(), formData.description.trim(), amount, formData.date, imageUrl, imageFileId);
   };
 
   return (
@@ -159,11 +207,43 @@ export function ExpenseForm({ onSubmit, onCancel, isLoading, availableCash }) {
         />
       </div>
 
+      {isImageKitConfigured() && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            {t('expenseImage') || 'Receipt/Image'} ({t('optional') || 'Optional'})
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {photoPreview && (
+            <div className="mt-2">
+              <img
+                src={photoPreview}
+                alt="Preview"
+                className="max-h-40 rounded border border-gray-200"
+              />
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="mt-2 text-sm text-amber-600 hover:text-amber-700"
+              >
+                {t('removeImage') || 'Remove image'}
+              </button>
+            </div>
+          )}
+          {uploadError && <p className="mt-1 text-sm text-red-600">{uploadError}</p>}
+        </div>
+      )}
+
       <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4">
         <LoadingButton type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
           {t('cancel')}
         </LoadingButton>
-        <LoadingButton type="submit" isLoading={isLoading} variant="danger">
+        <LoadingButton type="submit" isLoading={isLoading || isUploading} variant="danger" disabled={isUploading}>
           {t('addExpense')}
         </LoadingButton>
       </div>

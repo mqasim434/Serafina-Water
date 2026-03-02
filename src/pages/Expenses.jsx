@@ -17,6 +17,8 @@ import {
   setError,
 } from '../features/expenses/slice.js';
 import { expensesService } from '../features/expenses/slice.js';
+import { setUsers } from '../features/users/slice.js';
+import { usersService } from '../features/users/slice.js';
 import * as cashService from '../features/cash/service.js';
 import { setCashBalance } from '../features/orders/slice.js';
 
@@ -31,23 +33,25 @@ export function Expenses() {
   const { items: expenses, isLoading, error } = useSelector(
     (state) => state.expenses
   );
-  const { cashBalance } = useSelector((state) => state.orders);
+  const { items: users } = useSelector((state) => state.users);
   const { user } = useSelector((state) => state.auth);
 
   const [viewMode, setViewMode] = useState(VIEW_MODES.LIST);
   const [availableCash, setAvailableCash] = useState(0);
 
-  // Load expenses and categories on mount
+  // Load expenses, users (for export Created By), and available cash on mount
   useEffect(() => {
     async function loadData() {
       dispatch(setLoading(true));
       try {
-        const loadedExpenses = await expensesService.loadExpenses();
+        const [loadedExpenses, currentBalance, loadedUsers] = await Promise.all([
+          expensesService.loadExpenses(),
+          cashService.loadCurrentBalance(),
+          users.length === 0 ? usersService.loadUsers() : Promise.resolve(null),
+        ]);
         dispatch(setExpenses(loadedExpenses));
-
-        // Load available cash
-        const currentBalance = await cashService.loadCurrentBalance();
         setAvailableCash(currentBalance);
+        if (loadedUsers) dispatch(setUsers(loadedUsers));
       } catch (err) {
         dispatch(setError(err.message));
       } finally {
@@ -56,13 +60,14 @@ export function Expenses() {
     }
 
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   const handleAddExpense = () => {
     setViewMode(VIEW_MODES.ADD);
   };
 
-  const handleFormSubmit = async (title, description, amount, date) => {
+  const handleFormSubmit = async (title, description, amount, date, imageUrl = null, imageFileId = null) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
 
@@ -73,6 +78,8 @@ export function Expenses() {
           description,
           amount,
           date,
+          imageUrl,
+          imageFileId,
         },
         expenses,
         availableCash,
@@ -107,8 +114,6 @@ export function Expenses() {
       dispatch(setLoading(false));
     }
   };
-
-  const totalExpenses = expensesService.calculateTotalExpenses(expenses);
 
   if (isLoading && expenses.length === 0) {
     return (

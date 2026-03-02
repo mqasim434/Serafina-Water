@@ -110,3 +110,12 @@ export async function uploadDeliveryProof(file, folder = 'delivery-proof') {
   const result = await res.json();
   return { url: result.url, fileId: result.fileId };
 }
+
+/**
+ * Upload expense receipt/image to ImageKit
+ * @param {File} file - Image file
+ * @returns {Promise<{ url: string, fileId: string }>}
+ */
+export async function uploadExpenseImage(file) {
+  return uploadDeliveryProof(file, 'expense-receipts');
+}

@@ -121,6 +121,8 @@ export async function createExpense(data, existingExpenses, currentCashBalance, 
     description: data.description?.trim() || '',
     amount: data.amount,
     date: data.date,
+    imageUrl: data.imageUrl || null,
+    imageFileId: data.imageFileId || null,
     createdAt: now,
     createdBy: createdBy || null,
   };
@@ -288,4 +290,67 @@ export function calculateExpensesInRange(startDate, endDate, expenses) {
       return expenseDate >= startDate && expenseDate <= endDate;
     })
     .reduce((sum, expense) => sum + expense.amount, 0);
+}
+
+/**
+ * Filter expenses by date range
+ * @param {import('./types.js').Expense[]} expenses - All expenses
+ * @param {string} startDate - Start date (YYYY-MM-DD)
+ * @param {string} endDate - End date (YYYY-MM-DD)
+ * @returns {import('./types.js').Expense[]} Filtered expenses
+ */
+export function filterExpensesByDateRange(expenses, startDate, endDate) {
+  if (!startDate || !endDate) return expenses;
+  return expenses.filter((expense) => {
+    const expenseDate = expense.date || (expense.createdAt || '').split('T')[0];
+    return expenseDate >= startDate && expenseDate <= endDate;
+  });
+}
+
+/**
+ * Filter expenses by search query (matches title, description, amount)
+ * @param {import('./types.js').Expense[]} expenses - Expenses to filter
+ * @param {string} query - Search query
+ * @returns {import('./types.js').Expense[]} Filtered expenses
+ */
+export function filterExpensesBySearch(expenses, query) {
+  if (!query || !query.trim()) return expenses;
+  const q = query.trim().toLowerCase();
+  return expenses.filter((expense) => {
+    const title = (expense.title || '').toLowerCase();
+    const description = (expense.description || '').toLowerCase();
+    const amountStr = String(expense.amount || '');
+    return title.includes(q) || description.includes(q) || amountStr.includes(q);
+  });
+}
+
+/**
+ * Get date range for quick filter
+ * @param {'lastMonth' | 'ytd'} filterKey - Filter type
+ * @returns {{ startDate: string, endDate: string }}
+ */
+export function getQuickFilterDateRange(filterKey) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+
+  if (filterKey === 'lastMonth') {
+    const lastMonth = month === 0 ? 11 : month - 1;
+    const lastMonthYear = month === 0 ? year - 1 : year;
+    const startDate = new Date(lastMonthYear, lastMonth, 1);
+    const endDate = new Date(lastMonthYear, lastMonth + 1, 0);
+    return {
+      startDate: startDate.toISOString().slice(0, 10),
+      endDate: endDate.toISOString().slice(0, 10),
+    };
+  }
+
+  if (filterKey === 'ytd') {
+    return {
+      startDate: `${year}-01-01`,
+      endDate: today.toISOString().slice(0, 10),
+    };
+  }
+
+  return { startDate: '', endDate: '' };
 }

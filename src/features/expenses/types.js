@@ -12,6 +12,8 @@
  * @property {string} [description] - Optional description
  * @property {number} amount - Expense amount
  * @property {string} date - Expense date in YYYY-MM-DD format
+ * @property {string} [imageUrl] - ImageKit URL of attached receipt/image
+ * @property {string} [imageFileId] - ImageKit file ID
  * @property {string} createdAt - Creation timestamp (ISO string)
  * @property {string} [createdBy] - User who created the expense
  */
@@ -23,6 +25,8 @@
  * @property {string} [description] - Optional description
  * @property {number} amount - Expense amount
  * @property {string} date - Expense date in YYYY-MM-DD format
+ * @property {string} [imageUrl] - ImageKit URL of attached receipt/image
+ * @property {string} [imageFileId] - ImageKit file ID
  */
 
 /**
