@@ -224,6 +224,7 @@ export function Customers() {
               onEdit={handleEdit}
               onDeactivate={handleDeactivate}
               onActivate={handleActivate}
+              isLoading={isLoading}
             />
           )}
           {(viewMode === VIEW_MODES.ADD || viewMode === VIEW_MODES.EDIT) && (

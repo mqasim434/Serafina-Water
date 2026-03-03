@@ -196,8 +196,10 @@ export function Payroll() {
                         </button>
                         <span className="h-4 w-px bg-gray-300 flex-shrink-0" aria-hidden />
                         {emp.isActive ? (
-                          <button
+                          <LoadingButton
                             type="button"
+                            size="sm"
+                            variant="secondary"
                             onClick={async () => {
                               if (!window.confirm(t('confirmDeactivateEmployee') || 'Are you sure you want to deactivate this employee?')) return;
                               dispatch(setLoading(true));
@@ -211,13 +213,17 @@ export function Payroll() {
                                 dispatch(setLoading(false));
                               }
                             }}
-                            className="text-amber-600 hover:text-amber-800 text-sm"
+                            isLoading={isLoading}
+                            disabled={isLoading}
+                            className="text-amber-600 hover:text-amber-800 border-0 bg-transparent p-0 min-w-0"
                           >
                             {t('deactivate')}
-                          </button>
+                          </LoadingButton>
                         ) : (
-                          <button
+                          <LoadingButton
                             type="button"
+                            size="sm"
+                            variant="secondary"
                             onClick={async () => {
                               if (!window.confirm(t('confirmActivateEmployee') || 'Are you sure you want to activate this employee?')) return;
                               dispatch(setLoading(true));
@@ -231,14 +237,18 @@ export function Payroll() {
                                 dispatch(setLoading(false));
                               }
                             }}
-                            className="text-green-600 hover:text-green-800 text-sm"
+                            isLoading={isLoading}
+                            disabled={isLoading}
+                            className="text-green-600 hover:text-green-800 border-0 bg-transparent p-0 min-w-0"
                           >
                             {t('activate')}
-                          </button>
+                          </LoadingButton>
                         )}
                         <span className="h-4 w-px bg-gray-300 flex-shrink-0" aria-hidden />
-                        <button
+                        <LoadingButton
                           type="button"
+                          size="sm"
+                          variant="secondary"
                           onClick={async () => {
                             if (!window.confirm(t('confirmDeleteEmployee') || 'Are you sure you want to permanently delete this employee?')) return;
                             dispatch(setLoading(true));
@@ -252,10 +262,12 @@ export function Payroll() {
                               dispatch(setLoading(false));
                             }
                           }}
-                          className="text-red-600 hover:text-red-800 text-sm"
+                          isLoading={isLoading}
+                          disabled={isLoading}
+                          className="text-red-600 hover:text-red-800 border-0 bg-transparent p-0 min-w-0"
                         >
                           {t('delete')}
-                        </button>
+                        </LoadingButton>
                       </div>
                     </td>
                   </tr>

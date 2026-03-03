@@ -14,6 +14,7 @@ import { ordersService } from '../../../features/orders/slice.js';
 import { paymentsService } from '../../../features/payments/slice.js';
 import { bottlesService } from '../../../features/bottles/slice.js';
 import { getDeliveredByDisplay } from '../../../features/delivery/utils.js';
+import { LoadingButton } from '../../../shared/components/LoadingButton.jsx';
 
 /**
  * @param {Object} props
@@ -21,8 +22,9 @@ import { getDeliveredByDisplay } from '../../../features/delivery/utils.js';
  * @param {function(): void} props.onEdit
  * @param {function(): void} props.onDeactivate
  * @param {function(): void} props.onActivate
+ * @param {boolean} [props.isLoading]
  */
-export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) {
+export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate, isLoading = false }) {
   const { t } = useTranslation();
   const { items: products } = useSelector((state) => state.products);
   const { items: orders } = useSelector((state) => state.orders);
@@ -293,19 +295,23 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate }) 
                 {t('edit')}
               </button>
               {isActive ? (
-                <button
+                <LoadingButton
                   onClick={onDeactivate}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700"
+                  variant="warning"
+                  isLoading={isLoading}
+                  disabled={isLoading}
                 >
                   {t('deactivate')}
-                </button>
+                </LoadingButton>
               ) : (
-                <button
+                <LoadingButton
                   onClick={onActivate}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                  variant="success"
+                  isLoading={isLoading}
+                  disabled={isLoading}
                 >
                   {t('activate')}
-                </button>
+                </LoadingButton>
               )}
             </div>
           </div>
