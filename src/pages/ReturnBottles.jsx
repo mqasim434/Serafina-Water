@@ -78,6 +78,8 @@ export function ReturnBottles() {
   const handleReturnSubmit = async (customerId, items, notes) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
+    // Yield to browser so loading state can render before async work starts
+    await new Promise((r) => setTimeout(r, 0));
     try {
       const maxReturnable = getMaxReturnable(customerId);
       const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);

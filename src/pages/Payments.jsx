@@ -96,6 +96,8 @@ export function Payments() {
   const handleFormSubmit = async (customerId, amount, paymentMethod, notes) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
+    // Yield to browser so loading state can render before async work starts
+    await new Promise((r) => setTimeout(r, 0));
 
     try {
       // Get current cash balance

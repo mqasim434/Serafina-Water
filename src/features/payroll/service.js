@@ -225,13 +225,13 @@ export function getPayDueSoon(employees, todayStr) {
   const today = new Date(todayStr);
   const in7Days = new Date(today);
   in7Days.setDate(in7Days.getDate() + 7);
-  const in7Str = toDateStr(in7Days);
   return employees.filter((e) => {
     if (!e.isActive) return false;
-    const due = e.nextPayDate;
-    if (!due) return false;
+    if (!e.nextPayDate) return false;
+    const dueDate = new Date(e.nextPayDate);
+    if (Number.isNaN(dueDate.getTime())) return false;
     // Exclude today (that's Pay Due Today)
-    return due > todayStr && due <= in7Str;
+    return dueDate > today && dueDate <= in7Days;
   });
 }
 

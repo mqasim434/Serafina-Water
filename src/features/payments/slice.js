@@ -34,7 +34,6 @@ const paymentsSlice = createSlice({
     },
     setError: (state, action) => {
       state.error = action.payload;
-      state.isLoading = false;
     },
   },
 });

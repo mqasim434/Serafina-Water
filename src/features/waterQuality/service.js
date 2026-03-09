@@ -1,11 +1,14 @@
 /**
  * Water Quality Service
- * 
+ *
  * Business logic for water quality monitoring
  * No React/Redux dependencies - pure JavaScript functions
  */
 
 import { storageService } from '../../shared/services/storage.js';
+import { localStorageService } from '../../shared/services/localStorage.js';
+import { getTranslation, translations } from '../i18n/translations.js';
+import { normalizeLanguage, DEFAULT_LANGUAGE } from '../i18n/service.js';
 
 const STORAGE_KEYS = {
   ENTRIES: 'water_quality_entries',
@@ -177,10 +180,37 @@ export function analyzeWaterQuality(data, ranges) {
   let status = 'normal';
   const tolerance = ranges.warningTolerance || 10;
 
+  // Determine current language for alerts based on persisted i18n state.
+  /** @type {import('../i18n/types.js').Language} */
+  let lang = DEFAULT_LANGUAGE;
+  try {
+    const saved = localStorageService.getItem('i18n_language');
+    if (typeof saved === 'string' && translations[saved]) {
+      lang = /** @type {import('../i18n/types.js').Language} */ (normalizeLanguage(saved));
+    }
+  } catch {
+    // ignore and keep default 'en'
+  }
+
+  const tRaw = (key) => getTranslation(key, lang, translations);
+  const format = (templateKey, vars) => {
+    let str = tRaw(templateKey);
+    Object.entries(vars).forEach(([k, v]) => {
+      str = str.replace(`{${k}}`, String(v));
+    });
+    return str;
+  };
+
   // Check pH
   if (data.pH < ranges.pHMin || data.pH > ranges.pHMax) {
     if (isCriticalRange(data.pH, ranges.pHMin, ranges.pHMax, tolerance)) {
-      alerts.push(`CRITICAL: pH level ${data.pH} is far outside safe range (${ranges.pHMin}-${ranges.pHMax})`);
+      alerts.push(
+        format('criticalPhAlertTemplate', {
+          value: data.pH,
+          min: ranges.pHMin,
+          max: ranges.pHMax,
+        })
+      );
       status = 'critical';
     } else if (isWarningRange(data.pH, ranges.pHMin, ranges.pHMax, tolerance)) {
       alerts.push(`WARNING: pH level ${data.pH} is slightly outside safe range (${ranges.pHMin}-${ranges.pHMax})`);
@@ -194,7 +224,12 @@ export function analyzeWaterQuality(data, ranges) {
   if (data.tds > ranges.tdsMax) {
     const deviation = ((data.tds - ranges.tdsMax) / ranges.tdsMax) * 100;
     if (deviation > tolerance) {
-      alerts.push(`CRITICAL: TDS level ${data.tds} ppm is far above safe limit (${ranges.tdsMax} ppm)`);
+      alerts.push(
+        format('criticalTdsAlertTemplate', {
+          value: data.tds,
+          max: ranges.tdsMax,
+        })
+      );
       status = 'critical';
     } else {
       alerts.push(`WARNING: TDS level ${data.tds} ppm is slightly above safe limit (${ranges.tdsMax} ppm)`);
@@ -207,7 +242,13 @@ export function analyzeWaterQuality(data, ranges) {
   // Check Chlorine
   if (data.chlorine < ranges.chlorineMin || data.chlorine > ranges.chlorineMax) {
     if (isCriticalRange(data.chlorine, ranges.chlorineMin, ranges.chlorineMax, tolerance)) {
-      alerts.push(`CRITICAL: Chlorine level ${data.chlorine} is far outside safe range (${ranges.chlorineMin}-${ranges.chlorineMax})`);
+      alerts.push(
+        format('criticalChlorineAlertTemplate', {
+          value: data.chlorine,
+          min: ranges.chlorineMin,
+          max: ranges.chlorineMax,
+        })
+      );
       status = 'critical';
     } else if (isWarningRange(data.chlorine, ranges.chlorineMin, ranges.chlorineMax, tolerance)) {
       alerts.push(`WARNING: Chlorine level ${data.chlorine} is slightly outside safe range (${ranges.chlorineMin}-${ranges.chlorineMax})`);

@@ -12,7 +12,7 @@ import { formatTime12h } from '../service.js';
  * Water Quality List component
  */
 export function WaterQualityList() {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { items: entries, ranges } = useSelector((state) => state.waterQuality);
 
   const sortedEntries = [...entries].sort((a, b) => {
@@ -44,6 +44,49 @@ export function WaterQualityList() {
       default:
         return t('normal');
     }
+  };
+
+  const formatAlertMessage = (alert) => {
+    // For English (or any non-Urdu language), show original text
+    if (currentLanguage !== 'ur') return alert;
+
+    // CRITICAL: pH level 10 is far outside safe range (6.5-8.5)
+    let match = alert.match(
+      /^CRITICAL: pH level (.+?) is far outside safe range \((.+?)-(.+?)\)/
+    );
+    if (match) {
+      const [, value, min, max] = match;
+      return t('criticalPhAlertTemplate')
+        .replace('{value}', value)
+        .replace('{min}', min)
+        .replace('{max}', max);
+    }
+
+    // CRITICAL: TDS level 500 ppm is far above safe limit (300 ppm)
+    match = alert.match(
+      /^CRITICAL: TDS level (.+?) ppm is far above safe limit \((.+?) ppm\)/
+    );
+    if (match) {
+      const [, value, max] = match;
+      return t('criticalTdsAlertTemplate')
+        .replace('{value}', value)
+        .replace('{max}', max);
+    }
+
+    // CRITICAL: Chlorine level 3 is far outside safe range (0.2-2)
+    match = alert.match(
+      /^CRITICAL: Chlorine level (.+?) is far outside safe range \((.+?)-(.+?)\)/
+    );
+    if (match) {
+      const [, value, min, max] = match;
+      return t('criticalChlorineAlertTemplate')
+        .replace('{value}', value)
+        .replace('{min}', min)
+        .replace('{max}', max);
+    }
+
+    // Fallback: show original alert if it doesn't match known patterns
+    return alert;
   };
 
   if (sortedEntries.length === 0) {
@@ -116,7 +159,7 @@ export function WaterQualityList() {
                       alert.startsWith('CRITICAL') ? 'text-red-700 font-semibold' : 'text-yellow-700'
                     }`}
                   >
-                    {alert}
+                    {formatAlertMessage(alert)}
                   </div>
                 ))}
                 {entry.alerts.length > 2 && (
@@ -204,7 +247,7 @@ export function WaterQualityList() {
                               : 'text-yellow-700'
                           }`}
                         >
-                          {alert}
+                      {formatAlertMessage(alert)}
                         </div>
                       ))}
                     </div>

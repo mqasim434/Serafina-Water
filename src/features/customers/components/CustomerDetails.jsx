@@ -452,6 +452,22 @@ export function CustomerDetails({ customer, onEdit, onDeactivate, onActivate, is
                           <span className="text-gray-500 ml-2">
                             Rs. {(item.data.totalAmount ?? 0).toLocaleString()}
                           </span>
+                          {(() => {
+                            const lineItems = ordersService.getOrderLineItems(item.data);
+                            const productSummary = lineItems
+                              .map((orderItem) => {
+                                const p = (products || []).find((pr) => pr.id === orderItem.productId);
+                                return p ? `${p.name} (${p.size}) × ${orderItem.quantity}` : null;
+                              })
+                              .filter(Boolean)
+                              .join(', ');
+                            if (!productSummary) return null;
+                            return (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {productSummary}
+                              </p>
+                            );
+                          })()}
                           <p className="text-gray-500 text-xs mt-1">
                             {new Date(item.date).toLocaleString()}
                             {item.data.createdBy && (

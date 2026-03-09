@@ -151,6 +151,9 @@ export const translations = {
     editProduct: 'Edit Product',
     freeItem: 'Free item',
     noProductsFound: 'No products found. Add your first product to get started.',
+    noProducts: 'No products available',
+    addProductsFirst: 'Add at least one product before creating customers',
+    addProductsFirstMessage: 'You must add at least one product in the Products tab before adding customers. Please go to the Products tab and add your bottle products first.',
     close: 'Close',
     language: 'Language',
     companyInfo: 'Company Info',
@@ -430,6 +433,9 @@ export const translations = {
     minorWaterQualityIssues: 'Water quality values are slightly outside safe ranges',
     lastEntry: 'Last Entry',
     recentWaterQuality: 'Recent Water Quality',
+    criticalPhAlertTemplate: 'CRITICAL: pH level {value} is far outside safe range ({min}-{max})',
+    criticalTdsAlertTemplate: 'CRITICAL: TDS level {value} ppm is far above safe limit ({max} ppm)',
+    criticalChlorineAlertTemplate: 'CRITICAL: Chlorine level {value} is far outside safe range ({min}-{max})',
 
     // Maintenance
     maintenance: 'Maintenance',
@@ -684,6 +690,9 @@ export const translations = {
     orderItems: 'آرڈر آئٹمز',
     addItem: 'آئٹم شامل کریں',
     item: 'آئٹم',
+    customersWithOutstandingBottles: 'باقی بوتلوں والے کسٹمرز',
+    noCustomersWithOutstandingBottles: 'کسی بھی کسٹمر کے پاس واپس کرنے کے لیے باقی بوتلیں نہیں ہیں',
+    selectCustomerToReturnBottles: 'بوتلوں کی واپسی ریکارڈ کرنے کے لیے کسی کسٹمر پر کلک کریں',
     remove: 'ہٹائیں',
     required: 'ضروری',
     amountPaid: 'ادائیگی',
@@ -914,6 +923,9 @@ export const translations = {
     minorWaterQualityIssues: 'پانی کی کوالٹی کی اقدار محفوظ حدوں سے تھوڑی باہر ہیں',
     lastEntry: 'آخری اندراج',
     recentWaterQuality: 'حالیہ پانی کی کوالٹی',
+    criticalPhAlertTemplate: 'انتہائی تشویش: pH لیول {value} محفوظ حد ({min}-{max}) سے بہت باہر ہے',
+    criticalTdsAlertTemplate: 'انتہائی تشویش: TDS لیول {value} ppm محفوظ حد ({max} ppm) سے بہت زیادہ ہے',
+    criticalChlorineAlertTemplate: 'انتہائی تشویش: کلورین لیول {value} محفوظ حد ({min}-{max}) سے بہت باہر ہے',
 
     // Maintenance
     maintenance: 'دیکھ بھال',
@@ -935,6 +947,9 @@ export const translations = {
     documentDetails: 'دستاویز کی تفصیلات',
     currentDocument: 'موجودہ دستاویز',
     viewPdf: 'پی ڈی ایف دیکھیں',
+    maintenanceDueToday: 'آج کی / دیر سے ہونے والی دیکھ بھال',
+    certificatesExpiringSoon: 'جلد ختم ہونے والے سرٹیفکیٹس',
+    certificatesExpired: 'ختم شدہ سرٹیفکیٹس',
 
     // Payroll
     payroll: 'تنخواہ',
