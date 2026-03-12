@@ -60,7 +60,7 @@ export function validateUser(data, isNewUser = true) {
     return { isValid: false, error: 'Password must be at least 4 characters' };
   }
 
-  if (!data.role || !['admin', 'staff'].includes(data.role)) {
+  if (!data.role || !['admin', 'staff', 'driver'].includes(data.role)) {
     return { isValid: false, error: 'Role must be admin or staff' };
   }
 

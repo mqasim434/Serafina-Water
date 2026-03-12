@@ -114,21 +114,22 @@ function AppRoutes() {
         }
       />
 
-      {/* Customer Management */}
+      {/* Customer Management - Admin, Staff, Driver */}
       <Route
         path="/customers"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff', 'driver']}>
             <Layout>
               <Customers />
             </Layout>
           </ProtectedRoute>
         }
       />
+      {/* Place Orders - Admin, Staff */}
       <Route
         path="/place-orders"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff']}>
             <Layout>
               <Bottles />
             </Layout>
@@ -138,7 +139,7 @@ function AppRoutes() {
       <Route
         path="/return-bottles"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff']}>
             <Layout>
               <ReturnBottles />
             </Layout>
@@ -149,30 +150,33 @@ function AppRoutes() {
         path="/bottles"
         element={<Navigate to="/place-orders" replace />}
       />
+      {/* Payments - Admin, Staff */}
       <Route
         path="/payments"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff']}>
             <Layout>
               <Payments />
             </Layout>
           </ProtectedRoute>
         }
       />
+      {/* Deliveries - Admin, Staff, Driver */}
       <Route
         path="/deliveries"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff', 'driver']}>
             <Layout>
               <Deliveries />
             </Layout>
           </ProtectedRoute>
         }
       />
+      {/* Stock - Admin, Staff */}
       <Route
         path="/stock"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff']}>
             <Layout>
               <Stock />
             </Layout>
@@ -239,20 +243,22 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Water Quality - Admin, Staff */}
       <Route
         path="/water-quality"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff']}>
             <Layout>
               <WaterQuality />
             </Layout>
           </ProtectedRoute>
         }
       />
+      {/* Expenses - Admin, Staff */}
       <Route
         path="/expenses"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin', 'staff']}>
             <Layout>
               <Expenses />
             </Layout>

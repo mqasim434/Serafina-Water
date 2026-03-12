@@ -31,8 +31,10 @@ const payrollSlice = createSlice({
       state.error = null;
     },
     updateEmployeeInState: (state, action) => {
-      const idx = state.employees.findIndex((e) => e.id === action.payload.id);
-      if (idx !== -1) state.employees[idx] = action.payload;
+      const payload = action.payload;
+      state.employees = state.employees.map((e) =>
+        e.id === payload.id ? { ...e, ...payload } : e
+      );
       state.error = null;
     },
     removeEmployee: (state, action) => {
@@ -47,7 +49,6 @@ const payrollSlice = createSlice({
     },
     setError: (state, action) => {
       state.error = action.payload;
-      state.isLoading = false;
     },
   },
 });

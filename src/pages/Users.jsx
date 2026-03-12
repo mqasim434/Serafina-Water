@@ -284,6 +284,7 @@ export function Users() {
                   required
                 >
                   <option value="staff">{t('staff')}</option>
+                  <option value="driver">{t('driver')}</option>
                   <option value="admin">{t('admin')}</option>
                 </select>
               </div>
@@ -350,9 +351,9 @@ export function Users() {
                 <div className="flex justify-between items-start gap-2">
                   <span className="text-sm font-medium text-gray-900">{user.username}</span>
                   <span className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${
-                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'driver' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {user.role}
+                    {t(user.role)}
                   </span>
                 </div>
                 {(user.displayName || user.email) && (
@@ -440,9 +441,9 @@ export function Users() {
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'driver' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {user.role}
+                        {t(user.role)}
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">

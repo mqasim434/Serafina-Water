@@ -39,8 +39,8 @@ export function Payroll() {
   const [paymentHistoryEmployee, setPaymentHistoryEmployee] = useState(null);
 
   const today = cashService.getTodayDate();
-  const payDueToday = payrollService.getPayDueToday(employees, today);
-  const payDueSoon = payrollService.getPayDueSoon(employees, today);
+  const payDueToday = payrollService.getPayDueToday(employees, today, payments);
+  const payDueSoon = payrollService.getPayDueSoon(employees, today, payments);
 
   useEffect(() => {
     async function load() {
@@ -283,9 +283,18 @@ export function Payroll() {
         <AddEmployeeForm
           onClose={() => setShowAddEmployee(false)}
           onSubmit={async (data) => {
-            const emp = await payrollService.createEmployee(data, employees);
-            dispatch(addEmployee(emp));
-            setShowAddEmployee(false);
+            dispatch(setLoading(true));
+            dispatch(setError(null));
+            await new Promise((r) => setTimeout(r, 0));
+            try {
+              const emp = await payrollService.createEmployee(data, employees);
+              dispatch(addEmployee(emp));
+              setShowAddEmployee(false);
+            } catch (err) {
+              dispatch(setError(err.message));
+            } finally {
+              dispatch(setLoading(false));
+            }
           }}
           isLoading={isLoading}
           t={t}
@@ -300,6 +309,7 @@ export function Payroll() {
           onSubmit={async (paidDate, amount, notes) => {
             dispatch(setLoading(true));
             dispatch(setError(null));
+            await new Promise((r) => setTimeout(r, 0));
             try {
               const cash = await cashService.loadCurrentBalance();
               const cashNum = typeof cash === 'number' ? cash : (cash?.amount ?? 0);
@@ -319,6 +329,13 @@ export function Payroll() {
               dispatch(addExpense(result.expense));
               dispatch(setCashBalance({ amount: result.newCashBalance, lastUpdated: new Date().toISOString() }));
               setMarkPaidEmployee(null);
+              // Reload employees and payments from storage to ensure UI reflects latest state
+              const [reloadedEmployees, reloadedPayments] = await Promise.all([
+                payrollService.loadEmployees(),
+                payrollService.loadPayments(),
+              ]);
+              dispatch(setEmployees(reloadedEmployees));
+              dispatch(setPaymentsFull(reloadedPayments));
             } catch (err) {
               dispatch(setError(err.message));
             } finally {
@@ -436,10 +453,10 @@ function AddEmployeeForm({ onClose, onSubmit, isLoading, t }) {
             <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">{t('active')}</label>
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <LoadingButton type="button" variant="secondary" onClick={onClose}>
+            <LoadingButton type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
               {t('cancel')}
             </LoadingButton>
-            <LoadingButton type="submit" isLoading={isLoading}>
+            <LoadingButton type="submit" isLoading={isLoading} disabled={isLoading}>
               {t('save')}
             </LoadingButton>
           </div>
@@ -473,7 +490,8 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
               value={paidDate}
               onChange={(e) => setPaidDate(e.target.value)}
               max={today}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              disabled={isLoading}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div>
@@ -484,7 +502,8 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              disabled={isLoading}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div>
@@ -493,14 +512,15 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              disabled={isLoading}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <LoadingButton type="button" variant="secondary" onClick={onClose}>
+            <LoadingButton type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
               {t('cancel')}
             </LoadingButton>
-            <LoadingButton type="submit" isLoading={isLoading}>
+            <LoadingButton type="submit" isLoading={isLoading} disabled={isLoading}>
               {t('markPaid')}
             </LoadingButton>
           </div>

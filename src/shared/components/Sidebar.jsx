@@ -7,15 +7,49 @@
 import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useTranslation } from '../hooks/useTranslation.js';
-import { isAdmin } from '../../features/auth/service.js';
+import { isAdmin, isDriver } from '../../features/auth/service.js';
 
 /**
- * Navigation menu items
- * @param {boolean} isAdminUser - Whether user is admin
- * @returns {Array<{path: string, label: string, adminOnly?: boolean}>}
+ * Navigation menu items by role
+ * Admin: all tabs
+ * Driver: Customers, Deliveries
+ * Staff: Customers, Place Order, Return bottles, Deliveries, Stock, Payments, Expenses, Water Quality, Maintenance
+ * @param {Object} user - Current user
+ * @returns {Array<{path: string, label: string}>}
  */
-function getMenuItems(isAdminUser) {
-  const items = [
+function getMenuItems(user) {
+  if (!user) return [];
+
+  if (isAdmin(user)) {
+    return [
+      { path: '/', label: 'dashboard' },
+      { path: '/customers', label: 'customers' },
+      { path: '/place-orders', label: 'placeOrders' },
+      { path: '/return-bottles', label: 'returnBottles' },
+      { path: '/deliveries', label: 'deliveries' },
+      { path: '/stock', label: 'stock' },
+      { path: '/payments', label: 'payments' },
+      { path: '/expenses', label: 'expenses' },
+      { path: '/water-quality', label: 'waterQuality' },
+      { path: '/maintenance', label: 'maintenance' },
+      { path: '/payroll', label: 'payroll' },
+      { path: '/products', label: 'products' },
+      { path: '/users', label: 'users' },
+      { path: '/reports', label: 'reports' },
+      { path: '/settings', label: 'settings' },
+    ];
+  }
+
+  if (isDriver(user)) {
+    return [
+      { path: '/', label: 'dashboard' },
+      { path: '/customers', label: 'customers' },
+      { path: '/deliveries', label: 'deliveries' },
+    ];
+  }
+
+  // Staff
+  return [
     { path: '/', label: 'dashboard' },
     { path: '/customers', label: 'customers' },
     { path: '/place-orders', label: 'placeOrders' },
@@ -25,20 +59,8 @@ function getMenuItems(isAdminUser) {
     { path: '/payments', label: 'payments' },
     { path: '/expenses', label: 'expenses' },
     { path: '/water-quality', label: 'waterQuality' },
+    { path: '/maintenance', label: 'maintenance' },
   ];
-
-  if (isAdminUser) {
-    items.push(
-      { path: '/maintenance', label: 'maintenance', adminOnly: true },
-      { path: '/payroll', label: 'payroll', adminOnly: true },
-      { path: '/products', label: 'products', adminOnly: true },
-      { path: '/users', label: 'users', adminOnly: true },
-      { path: '/reports', label: 'reports', adminOnly: true },
-      { path: '/settings', label: 'settings', adminOnly: true }
-    );
-  }
-
-  return items;
 }
 
 /**
@@ -55,8 +77,7 @@ function getMenuItems(isAdminUser) {
 export function Sidebar({ isOpen, onClose }) {
   const { t } = useTranslation();
   const { user } = useSelector((state) => state.auth);
-  const isAdminUser = isAdmin(user);
-  const menuItems = getMenuItems(isAdminUser);
+  const menuItems = getMenuItems(user);
 
   return (
     <aside

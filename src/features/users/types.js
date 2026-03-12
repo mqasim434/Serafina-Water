@@ -11,7 +11,7 @@
  * @property {string} username - Username (unique)
  * @property {string} password - Hashed password (in production, should be hashed)
  * @property {string} email - Email address (optional)
- * @property {'admin' | 'staff'} role - User role
+ * @property {'admin' | 'staff' | 'driver'} role - User role
  * @property {string} [displayName] - Optional display name
  * @property {boolean} isActive - Whether user is active
  * @property {string} createdAt - Creation timestamp (ISO string)
@@ -25,7 +25,7 @@
  * @property {string} username - Username
  * @property {string} password - Password (only required for new users)
  * @property {string} [email] - Email address
- * @property {'admin' | 'staff'} role - User role
+ * @property {'admin' | 'staff' | 'driver'} role - User role
  * @property {string} [displayName] - Optional display name
  * @property {boolean} [isActive] - Whether user is active
  */

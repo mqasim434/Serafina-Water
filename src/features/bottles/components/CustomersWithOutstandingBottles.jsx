@@ -91,14 +91,14 @@ export function CustomersWithOutstandingBottles({ onSelectCustomer }) {
             onClick={() => onSelectCustomer(item.customerId)}
             className="w-full px-6 py-4 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
+            <div className="flex flex-row items-center justify-between gap-4" dir="ltr">
+              <div className="min-w-0 flex-1 text-left">
                 <p className="text-sm font-medium text-gray-900">{item.customer.name}</p>
                 {item.customer.phone && (
                   <p className="text-sm text-gray-500 mt-1">{item.customer.phone}</p>
                 )}
               </div>
-              <div className="ml-4 text-right">
+              <div className="flex-shrink-0 text-right">
                 <p className="text-sm font-medium text-gray-600">{t('outstanding')}</p>
                 <p className="text-lg font-bold text-orange-600 mt-1">
                   {item.outstanding}

@@ -20,7 +20,7 @@ const STORAGE_KEYS = {
  * @returns {boolean} True if valid role
  */
 export function isValidRole(role) {
-  return role === 'admin' || role === 'staff';
+  return role === 'admin' || role === 'staff' || role === 'driver';
 }
 
 /**
@@ -42,6 +42,15 @@ export function isStaff(user) {
 }
 
 /**
+ * Check if user has driver role
+ * @param {import('./types.js').User | null} user - User object
+ * @returns {boolean} True if user is driver
+ */
+export function isDriver(user) {
+  return user?.role === 'driver';
+}
+
+/**
  * Check if user has required role
  * @param {import('./types.js').User | null} user - User object
  * @param {import('./types.js').UserRole} requiredRole - Required role
@@ -51,7 +60,20 @@ export function hasRole(user, requiredRole) {
   if (!user) return false;
   if (requiredRole === 'admin') return user.role === 'admin';
   if (requiredRole === 'staff') return user.role === 'staff' || user.role === 'admin';
+  if (requiredRole === 'driver') return user.role === 'driver' || user.role === 'admin';
   return false;
+}
+
+/**
+ * Check if user has any of the allowed roles
+ * @param {import('./types.js').User | null} user - User object
+ * @param {import('./types.js').UserRole[]} allowedRoles - Roles that can access
+ * @returns {boolean} True if user has one of the allowed roles (admin always has access)
+ */
+export function hasAnyRole(user, allowedRoles) {
+  if (!user) return false;
+  if (user.role === 'admin') return true;
+  return allowedRoles.includes(user.role);
 }
 
 /**

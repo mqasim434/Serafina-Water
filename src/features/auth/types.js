@@ -6,7 +6,7 @@
 
 /**
  * User role types
- * @typedef {'admin' | 'staff'} UserRole
+ * @typedef {'admin' | 'staff' | 'driver'} UserRole
  */
 
 /**

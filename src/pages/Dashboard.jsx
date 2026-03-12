@@ -59,7 +59,7 @@ export function Dashboard() {
   const { items: customers } = useSelector((state) => state.customers);
   const { user } = useSelector((state) => state.auth);
   const { tasks: maintenanceTasks } = useSelector((state) => state.maintenance);
-  const { employees: payrollEmployees } = useSelector((state) => state.payroll);
+  const { employees: payrollEmployees, payments: payrollPayments } = useSelector((state) => state.payroll);
 
   // Load all dashboard data on mount so cards reflect real-time data
   useEffect(() => {
@@ -327,18 +327,18 @@ export function Dashboard() {
           {payrollEmployees?.length > 0 && (
             <div className={`bg-green-50 border border-green-200 rounded-lg p-4 ${maintenanceTasks?.length > 0 ? 'md:col-span-2' : ''}`}>
               <h3 className="font-semibold text-green-900 mb-2">{t('payroll')} — {t('payDueToday')} / {t('payDueSoon')}</h3>
-              {payrollService.getPayDueToday(payrollEmployees, today).length === 0 &&
-               payrollService.getPayDueSoon(payrollEmployees, today).length === 0 ? (
+              {payrollService.getPayDueToday(payrollEmployees, today, payrollPayments || []).length === 0 &&
+               payrollService.getPayDueSoon(payrollEmployees, today, payrollPayments || []).length === 0 ? (
                 <p className="text-sm text-green-800">None due</p>
               ) : (
                 <ul className="space-y-1">
-                  {payrollService.getPayDueToday(payrollEmployees, today).map((e) => (
+                  {payrollService.getPayDueToday(payrollEmployees, today, payrollPayments || []).map((e) => (
                     <li key={e.id} className="flex justify-between text-sm">
                       <span className="font-medium">{e.name} — Rs. {(e.payAmount || 0).toLocaleString()} ({t('payDueToday')})</span>
                       <Link to="/payroll" className="text-blue-600 font-medium">{t('markPaid')}</Link>
                     </li>
                   ))}
-                  {payrollService.getPayDueSoon(payrollEmployees, today).map((e) => (
+                  {payrollService.getPayDueSoon(payrollEmployees, today, payrollPayments || []).map((e) => (
                     <li key={e.id} className="flex justify-between text-sm">
                       <span>{e.name} — {e.nextPayDate} — Rs. {(e.payAmount || 0).toLocaleString()}</span>
                       <Link to="/payroll" className="text-blue-600 font-medium">{t('markPaid')}</Link>

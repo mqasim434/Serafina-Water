@@ -39,16 +39,34 @@ export async function savePayments(payments) {
 }
 
 /**
+ * Normalize payDates to array of numbers (handles string "1" or "1,15" or array [1])
+ */
+function normalizePayDates(payDates) {
+  let arr;
+  if (Array.isArray(payDates) && payDates.length > 0) {
+    arr = payDates.map((n) => parseInt(n, 10)).filter((n) => !isNaN(n) && n >= 1 && n <= 28);
+  } else {
+    const str = String(payDates || '1');
+    arr = str.split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n) && n >= 1 && n <= 28);
+  }
+  return arr.length > 0 ? arr : [1];
+}
+
+/**
  * Compute next pay date from last paid date or start date
  */
 function computeNextPayDate(lastPaidOrStartDate, payType, payDates) {
-  const d = new Date(lastPaidOrStartDate);
+  const parts = String(lastPaidOrStartDate).slice(0, 10).split('-').map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2] || 1);
   const day = d.getDate();
   const month = d.getMonth();
   const year = d.getFullYear();
+  const payDatesArr = normalizePayDates(payDates);
 
   if (payType === 'monthly') {
-    const targetDay = payDates[0] || 1;
+    const targetDay = payDatesArr[0] || 1;
     if (day < targetDay) {
       d.setDate(targetDay);
       return toDateStr(d);
@@ -221,20 +239,45 @@ export function getPaymentsForEmployee(employeeId, payments) {
     .sort((a, b) => new Date(b.paidDate) - new Date(a.paidDate));
 }
 
-export function getPayDueSoon(employees, todayStr) {
-  const today = new Date(todayStr);
+function toDateKey(d) {
+  if (!d) return '';
+  const s = String(d);
+  return s.slice(0, 10);
+}
+
+export function getPayDueSoon(employees, todayStr, payments = []) {
+  const todayNorm = toDateKey(todayStr);
+  const paidTodayIds = new Set(
+    (payments || [])
+      .filter((p) => toDateKey(p.paidDate) === todayNorm)
+      .map((p) => p.employeeId)
+  );
+  const [y, m, d] = todayNorm.split('-').map(Number);
+  const today = new Date(y, m - 1, d);
   const in7Days = new Date(today);
   in7Days.setDate(in7Days.getDate() + 7);
   return employees.filter((e) => {
     if (!e.isActive) return false;
+    if (paidTodayIds.has(e.id)) return false;
     if (!e.nextPayDate) return false;
-    const dueDate = new Date(e.nextPayDate);
+    const parts = String(e.nextPayDate).slice(0, 10).split('-').map(Number);
+    const dueDate = new Date(parts[0], parts[1] - 1, parts[2] || 1);
     if (Number.isNaN(dueDate.getTime())) return false;
-    // Exclude today (that's Pay Due Today)
     return dueDate > today && dueDate <= in7Days;
   });
 }
 
-export function getPayDueToday(employees, todayStr) {
-  return employees.filter((e) => e.isActive && e.nextPayDate === todayStr);
+export function getPayDueToday(employees, todayStr, payments = []) {
+  const todayNorm = toDateKey(todayStr);
+  const paidTodayIds = new Set(
+    (payments || [])
+      .filter((p) => toDateKey(p.paidDate) === todayNorm)
+      .map((p) => p.employeeId)
+  );
+  return employees.filter(
+    (e) =>
+      e.isActive &&
+      !paidTodayIds.has(e.id) &&
+      String(e.nextPayDate || '').slice(0, 10) === todayNorm
+  );
 }
