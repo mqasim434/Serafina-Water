@@ -25,8 +25,6 @@ import { expensesService } from '../features/expenses/slice.js';
 import { setCashBalance } from '../features/orders/slice.js';
 import * as cashService from '../features/cash/service.js';
 
-const PAY_TYPES = { MONTHLY: 'monthly', BIWEEKLY: 'biweekly' };
-
 export function Payroll() {
   const dispatch = useDispatch();
   const { t } = useTranslation();
@@ -65,21 +63,21 @@ export function Payroll() {
 
   if (!isAdmin(user)) {
     return (
-      <div className="p-4 sm:p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+      <div className="p-4 sm:p-6 px-2 sm:px-0">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
           {t('accessDenied')}
         </div>
       </div>
     );
   }
 
-  const activeEmployees = employees.filter((e) => e.isActive);
-
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('payroll')}</h1>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('payroll')}</h1>
+      </div>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">{error}</div>
       )}
 
       {/* Pay Due Today / Soon */}
@@ -87,15 +85,15 @@ export function Payroll() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {payDueToday.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <h3 className="font-semibold text-amber-900 mb-2">{t('payDueToday')}</h3>
-              <ul className="space-y-2">
+              <h3 className="font-semibold text-amber-900 mb-2 text-sm sm:text-base">{t('payDueToday')}</h3>
+              <ul className="space-y-3">
                 {payDueToday.map((emp) => (
-                  <li key={emp.id} className="flex justify-between items-center">
-                    <span className="font-medium">{emp.name} — Rs. {(emp.payAmount || 0).toLocaleString()}</span>
+                  <li key={emp.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <span className="font-medium text-sm sm:text-base break-words">{emp.name} — Rs. {(emp.payAmount || 0).toLocaleString()}</span>
                     <button
                       type="button"
                       onClick={() => setMarkPaidEmployee(emp)}
-                      className="px-3 py-1 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700"
+                      className="w-full sm:w-auto shrink-0 px-3 py-2 sm:py-1 bg-amber-600 text-white rounded text-sm font-medium hover:bg-amber-700"
                     >
                       {t('markPaid')}
                     </button>
@@ -106,15 +104,15 @@ export function Payroll() {
           )}
           {payDueSoon.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">{t('payDueSoon')}</h3>
-              <ul className="space-y-2">
+              <h3 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">{t('payDueSoon')}</h3>
+              <ul className="space-y-3">
                 {payDueSoon.map((emp) => (
-                  <li key={emp.id} className="flex justify-between items-center">
-                    <span>{emp.name} — {emp.nextPayDate} — Rs. {(emp.payAmount || 0).toLocaleString()}</span>
+                  <li key={emp.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                    <span className="text-sm sm:text-base break-words">{emp.name} — {emp.nextPayDate} — Rs. {(emp.payAmount || 0).toLocaleString()}</span>
                     <button
                       type="button"
                       onClick={() => setMarkPaidEmployee(emp)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
+                      className="w-full sm:w-auto shrink-0 px-3 py-2 sm:py-1 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700"
                     >
                       {t('markPaid')}
                     </button>
@@ -126,54 +124,172 @@ export function Payroll() {
         </div>
       )}
 
-      {/* Employees Table */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">{t('employees')}</h2>
+      {/* Employees Section */}
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">{t('employees')}</h2>
           <button
             type="button"
             onClick={() => setShowAddEmployee(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
           >
             {t('add')} {t('employee')}
           </button>
         </div>
         {employees.length === 0 ? (
-          <p className="text-gray-500 py-4">{t('noEmployees')}</p>
+          <p className="text-gray-500 py-4 text-sm sm:text-base">{t('noEmployees')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <>
+            {/* Mobile card layout */}
+            <div className="block sm:hidden divide-y divide-gray-200">
+              {employees.map((emp) => (
+                <div
+                  key={emp.id}
+                  className={`p-4 space-y-2 ${!emp.isActive ? 'bg-gray-50 opacity-75' : ''}`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-sm font-medium text-gray-900">{emp.name}</span>
+                    <span className={`shrink-0 px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      emp.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {emp.isActive ? t('active') : t('inactive')}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
+                    <span>{t('payType')}:</span>
+                    <span>{(emp.payType === 'biweekly' || emp.payType === 'bimonthly') ? t('biweekly') : t('monthly')}</span>
+                    <span>{t('payAmount')}:</span>
+                    <span>Rs. {(emp.payAmount || 0).toLocaleString()}</span>
+                    <span>{t('nextPayDate')}:</span>
+                    <span>{emp.nextPayDate || '-'}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {emp.isActive && (
+                      <button
+                        type="button"
+                        onClick={() => setMarkPaidEmployee(emp)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        {t('markPaid')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPaymentHistoryEmployee(emp)}
+                      className="text-gray-600 hover:text-gray-800 text-xs"
+                    >
+                      {t('paymentHistory')}
+                    </button>
+                    {emp.isActive ? (
+                      <LoadingButton
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={async () => {
+                          if (!window.confirm(t('confirmDeactivateEmployee') || 'Are you sure you want to deactivate this employee?')) return;
+                          dispatch(setLoading(true));
+                          dispatch(setError(null));
+                          try {
+                            const updated = await payrollService.deactivateEmployee(emp.id, employees);
+                            dispatch(updateEmployeeInState(updated));
+                          } catch (err) {
+                            dispatch(setError(err.message));
+                          } finally {
+                            dispatch(setLoading(false));
+                          }
+                        }}
+                        isLoading={isLoading}
+                        disabled={isLoading}
+                        className="text-amber-600 hover:text-amber-800 border-0 bg-transparent p-0 min-w-0 text-xs"
+                      >
+                        {t('deactivate')}
+                      </LoadingButton>
+                    ) : (
+                      <LoadingButton
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={async () => {
+                          if (!window.confirm(t('confirmActivateEmployee') || 'Are you sure you want to activate this employee?')) return;
+                          dispatch(setLoading(true));
+                          dispatch(setError(null));
+                          try {
+                            const updated = await payrollService.activateEmployee(emp.id, employees);
+                            dispatch(updateEmployeeInState(updated));
+                          } catch (err) {
+                            dispatch(setError(err.message));
+                          } finally {
+                            dispatch(setLoading(false));
+                          }
+                        }}
+                        isLoading={isLoading}
+                        disabled={isLoading}
+                        className="text-green-600 hover:text-green-800 border-0 bg-transparent p-0 min-w-0 text-xs"
+                      >
+                        {t('activate')}
+                      </LoadingButton>
+                    )}
+                    <LoadingButton
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={async () => {
+                        if (!window.confirm(t('confirmDeleteEmployee') || 'Are you sure you want to permanently delete this employee?')) return;
+                        dispatch(setLoading(true));
+                        dispatch(setError(null));
+                        try {
+                          await payrollService.deleteEmployee(emp.id, employees);
+                          dispatch(removeEmployee(emp.id));
+                        } catch (err) {
+                          dispatch(setError(err.message));
+                        } finally {
+                          dispatch(setLoading(false));
+                        }
+                      }}
+                      isLoading={isLoading}
+                      disabled={isLoading}
+                      className="text-red-600 hover:text-red-800 border-0 bg-transparent p-0 min-w-0 text-xs"
+                    >
+                      {t('delete')}
+                    </LoadingButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('name')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('payType')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('payAmount')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('payDates')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('nextPayDate')}</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('status')}</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('name')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('payType')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('payAmount')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('payDates')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('nextPayDate')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('status')}</th>
+                  <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {employees.map((emp) => (
                   <tr key={emp.id} className={!emp.isActive ? 'bg-gray-50' : 'hover:bg-gray-50'}>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{emp.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{emp.name}</td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {(emp.payType === 'biweekly' || emp.payType === 'bimonthly') ? t('biweekly') : t('monthly')}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       Rs. {(emp.payAmount || 0).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {(emp.payDates || []).join(', ')}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{emp.nextPayDate || '-'}</td>
-                    <td className="px-4 py-3 text-sm">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{emp.nextPayDate || '-'}</td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                       <span className={emp.isActive ? 'text-green-600' : 'text-gray-500'}>
                         {emp.isActive ? t('active') : t('inactive')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
                       <div className="flex items-center justify-end gap-2">
                         {emp.isActive && (
                           <>
@@ -274,7 +390,8 @@ export function Payroll() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -386,9 +503,9 @@ function AddEmployeeForm({ onClose, onSubmit, isLoading, t }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('add')} {t('employee')}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('add')} {t('employee')}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('name')} *</label>
@@ -452,7 +569,7 @@ function AddEmployeeForm({ onClose, onSubmit, isLoading, t }) {
             />
             <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">{t('active')}</label>
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
             <LoadingButton type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
               {t('cancel')}
             </LoadingButton>
@@ -473,9 +590,9 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
   const [notes, setNotes] = useState('');
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('markPaid')} — {employee.name}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('markPaid')} — {employee.name}</h3>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -516,7 +633,7 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
             <LoadingButton type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
               {t('cancel')}
             </LoadingButton>
@@ -532,9 +649,9 @@ function MarkPaidModal({ employee, onClose, onSubmit, isLoading, t }) {
 
 function PaymentHistoryModal({ employee, payments, onClose, t }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">{t('paymentHistory')} — {employee.name}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-4 sm:p-6 max-h-[85vh] overflow-y-auto my-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('paymentHistory')} — {employee.name}</h3>
         {payments.length === 0 ? (
           <p className="text-gray-500">{t('noPayments')}</p>
         ) : (
@@ -548,7 +665,7 @@ function PaymentHistoryModal({ employee, payments, onClose, t }) {
           </ul>
         )}
         <div className="mt-4">
-          <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+          <button type="button" onClick={onClose} className="w-full sm:w-auto px-4 py-2 border rounded-lg text-sm sm:text-base">
             {t('close')}
           </button>
         </div>

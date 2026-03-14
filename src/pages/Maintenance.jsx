@@ -70,8 +70,8 @@ export function Maintenance() {
 
   if (!isAdmin(user)) {
     return (
-      <div className="p-4 sm:p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+      <div className="p-4 sm:p-6 px-2 sm:px-0">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">
           {t('accessDenied')}
         </div>
       </div>
@@ -90,19 +90,19 @@ export function Maintenance() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('maintenance')}</h1>
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('maintenance')}</h1>
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded text-sm sm:text-base">{error}</div>
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="flex gap-4">
+      <div className="border-b border-gray-200 overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
+        <nav className="flex gap-2 sm:gap-4 min-w-0">
           <button
             type="button"
             onClick={() => setActiveTab(TABS.EQUIPMENT)}
-            className={`py-2 px-1 border-b-2 text-sm font-medium ${
+            className={`py-2 px-2 sm:px-1 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 ${
               activeTab === TABS.EQUIPMENT ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'
             }`}
           >
@@ -111,7 +111,7 @@ export function Maintenance() {
           <button
             type="button"
             onClick={() => setActiveTab(TABS.CERTIFICATE)}
-            className={`py-2 px-1 border-b-2 text-sm font-medium ${
+            className={`py-2 px-2 sm:px-1 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 ${
               activeTab === TABS.CERTIFICATE ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'
             }`}
           >
@@ -122,129 +122,208 @@ export function Maintenance() {
 
       {/* Equipment / Cleaning */}
       {activeTab === TABS.EQUIPMENT && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">{t('equipmentCleaning')}</h2>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">{t('equipmentCleaning')}</h2>
             <button
               type="button"
               onClick={() => setShowAddEquipment(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
             >
               {t('add')} {t('equipmentTask')}
             </button>
           </div>
           {equipmentTasks.length === 0 ? (
-            <p className="text-gray-500 py-4">{t('noEquipmentTasks')}</p>
+            <p className="text-gray-500 py-4 text-sm sm:text-base">{t('noEquipmentTasks')}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('itemName')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('lastDoneDate')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('nextDueDate')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('frequency')}</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {equipmentTasks.map((task) => (
-                    <tr key={task.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{task.itemName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{task.lastDoneDate || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{task.nextDueDate || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {task.frequencyDays ? `Every ${task.frequencyDays} days` : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setMarkDoneTask(task)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
-                        >
-                          {t('markDone')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setHistoryTask(task)}
-                          className="text-gray-600 hover:text-gray-800 text-sm"
-                        >
-                          {t('history')}
-                        </button>
-                      </td>
+            <>
+              {/* Mobile card layout */}
+              <div className="block sm:hidden divide-y divide-gray-200">
+                {equipmentTasks.map((task) => (
+                  <div key={task.id} className="p-4 space-y-2">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">{task.itemName}</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
+                      <span>{t('lastDoneDate')}:</span>
+                      <span>{task.lastDoneDate || '-'}</span>
+                      <span>{t('nextDueDate')}:</span>
+                      <span>{task.nextDueDate || '-'}</span>
+                      <span>{t('frequency')}:</span>
+                      <span>{task.frequencyDays ? `Every ${task.frequencyDays} days` : '-'}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setMarkDoneTask(task)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        {t('markDone')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHistoryTask(task)}
+                        className="text-gray-600 hover:text-gray-800 text-xs"
+                      >
+                        {t('history')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('itemName')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('lastDoneDate')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('nextDueDate')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('frequency')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {equipmentTasks.map((task) => (
+                      <tr key={task.id} className="hover:bg-gray-50">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{task.itemName}</td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{task.lastDoneDate || '-'}</td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{task.nextDueDate || '-'}</td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {task.frequencyDays ? `Every ${task.frequencyDays} days` : '-'}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <button
+                            type="button"
+                            onClick={() => setMarkDoneTask(task)}
+                            className="text-blue-600 hover:text-blue-800 font-medium mr-3"
+                          >
+                            {t('markDone')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setHistoryTask(task)}
+                            className="text-gray-600 hover:text-gray-800"
+                          >
+                            {t('history')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {/* Certificates */}
       {activeTab === TABS.CERTIFICATE && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">{t('certificatesPaperwork')}</h2>
+        <div className="bg-white rounded-lg shadow p-4 sm:p-6 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">{t('certificatesPaperwork')}</h2>
             <button
               type="button"
               onClick={() => setShowAddCertificate(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
             >
               {t('add')} {t('certificate')}
             </button>
           </div>
           {certificateTasks.length === 0 ? (
-            <p className="text-gray-500 py-4">{t('noCertificates')}</p>
+            <p className="text-gray-500 py-4 text-sm sm:text-base">{t('noCertificates')}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('documentName')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('documentType')}</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{t('expiryDate')}</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {certificateTasks.map((task) => (
-                    <tr key={task.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{task.documentName}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{task.documentType || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{task.expiryDate}</td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setViewingCertificateTask(task)}
-                          className="inline-flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded mr-2"
-                          title={t('viewDetails')}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setMarkRenewedTask(task)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3"
-                        >
-                          {t('markRenewed')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRenewalTask(task)}
-                          className="text-gray-600 hover:text-gray-800 text-sm"
-                        >
-                          {t('renewalHistory')}
-                        </button>
-                      </td>
+            <>
+              {/* Mobile card layout */}
+              <div className="block sm:hidden divide-y divide-gray-200">
+                {certificateTasks.map((task) => (
+                  <div key={task.id} className="p-4 space-y-2">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">{task.documentName}</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
+                      <span>{t('documentType')}:</span>
+                      <span>{task.documentType || '-'}</span>
+                      <span>{t('expiryDate')}:</span>
+                      <span>{task.expiryDate}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setViewingCertificateTask(task)}
+                        className="inline-flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                        title={t('viewDetails')}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMarkRenewedTask(task)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                      >
+                        {t('markRenewed')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRenewalTask(task)}
+                        className="text-gray-600 hover:text-gray-800 text-xs"
+                      >
+                        {t('renewalHistory')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('documentName')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('documentType')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('expiryDate')}</th>
+                      <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('actions')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {certificateTasks.map((task) => (
+                      <tr key={task.id} className="hover:bg-gray-50">
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{task.documentName}</td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{task.documentType || '-'}</td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{task.expiryDate}</td>
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <button
+                            type="button"
+                            onClick={() => setViewingCertificateTask(task)}
+                            className="inline-flex items-center justify-center p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded mr-2"
+                            title={t('viewDetails')}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMarkRenewedTask(task)}
+                            className="text-blue-600 hover:text-blue-800 font-medium mr-3"
+                          >
+                            {t('markRenewed')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRenewalTask(task)}
+                            className="text-gray-600 hover:text-gray-800"
+                          >
+                            {t('renewalHistory')}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -416,9 +495,9 @@ function AddEquipmentForm({ onClose, onSubmit, isLoading }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('add')} {t('equipmentTask')}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('add')} {t('equipmentTask')}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('itemName')} *</label>
@@ -470,7 +549,7 @@ function AddEquipmentForm({ onClose, onSubmit, isLoading }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
             <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
             </LoadingButton>
@@ -523,9 +602,9 @@ function AddCertificateForm({ onClose, onSubmit, isLoading }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">{t('add')} {t('certificate')}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto my-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('add')} {t('certificate')}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('documentName')} *</label>
@@ -597,7 +676,7 @@ function AddCertificateForm({ onClose, onSubmit, isLoading }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
             <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
             </LoadingButton>
@@ -637,9 +716,9 @@ function MarkDoneModal({ task, onClose, onSubmit, isLoading }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('markDone')} — {task.itemName}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('markDone')} — {task.itemName}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('doneDate')}</label>
@@ -672,7 +751,7 @@ function MarkDoneModal({ task, onClose, onSubmit, isLoading }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
             <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
             </LoadingButton>
@@ -715,9 +794,9 @@ function MarkRenewedModal({ task, onClose, onSubmit, isLoading }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('markRenewed')} — {task.documentName}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-auto max-h-[90vh] overflow-y-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('markRenewed')} — {task.documentName}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">{t('newExpiryDate')} *</label>
@@ -750,7 +829,7 @@ function MarkRenewedModal({ task, onClose, onSubmit, isLoading }) {
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
             <LoadingButton type="button" variant="secondary" onClick={onClose}>
               {t('cancel')}
             </LoadingButton>
@@ -767,9 +846,9 @@ function MarkRenewedModal({ task, onClose, onSubmit, isLoading }) {
 function HistoryModal({ task, history, getUserName, onClose }) {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">{t('history')} — {task.itemName}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-4 sm:p-6 max-h-[85vh] overflow-y-auto my-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('history')} — {task.itemName}</h3>
         {history.length === 0 ? (
           <p className="text-gray-500">{t('noHistory')}</p>
         ) : (
@@ -790,7 +869,7 @@ function HistoryModal({ task, history, getUserName, onClose }) {
                         {t('viewPdf')}
                       </a>
                     ) : (
-                      <a href={h.attachmentUrl} target="_blank" rel="noopener noreferrer" className="block rounded overflow-hidden border border-gray-200 max-w-[200px]">
+                      <a href={h.attachmentUrl} target="_blank" rel="noopener noreferrer" className="block rounded overflow-hidden border border-gray-200 max-w-full sm:max-w-[200px]">
                         <img src={h.attachmentUrl} alt="" className="w-full h-auto object-contain max-h-32" />
                       </a>
                     )}
@@ -801,7 +880,7 @@ function HistoryModal({ task, history, getUserName, onClose }) {
           </ul>
         )}
         <div className="mt-4">
-          <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+          <button type="button" onClick={onClose} className="w-full sm:w-auto px-4 py-2 border rounded-lg text-sm sm:text-base">
             {t('close')}
           </button>
         </div>
@@ -813,17 +892,17 @@ function HistoryModal({ task, history, getUserName, onClose }) {
 function RenewalHistoryModal({ task, renewals, getUserName, onClose }) {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">{t('renewalHistory')} — {task.documentName}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-4 sm:p-6 max-h-[85vh] overflow-y-auto my-auto">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">{t('renewalHistory')} — {task.documentName}</h3>
         {renewals.length === 0 ? (
           <p className="text-gray-500">{t('noRenewals')}</p>
         ) : (
           <ul className="space-y-2">
             {renewals.map((r) => (
-              <li key={r.id} className="flex justify-between items-start py-2 border-b border-gray-100">
+              <li key={r.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 py-2 border-b border-gray-100">
                 <div>
-                  <span className="font-medium">{r.renewedDate} → {r.newExpiryDate}</span>
+                  <span className="font-medium text-sm sm:text-base">{r.renewedDate} → {r.newExpiryDate}</span>
                   {r.notes && <p className="text-sm text-gray-600">{r.notes}</p>}
                 </div>
                 <span className="text-sm text-gray-500">{getUserName(r.renewedBy)}</span>
@@ -832,7 +911,7 @@ function RenewalHistoryModal({ task, renewals, getUserName, onClose }) {
           </ul>
         )}
         <div className="mt-4">
-          <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+          <button type="button" onClick={onClose} className="w-full sm:w-auto px-4 py-2 border rounded-lg text-sm sm:text-base">
             {t('close')}
           </button>
         </div>
@@ -844,10 +923,10 @@ function RenewalHistoryModal({ task, renewals, getUserName, onClose }) {
 function CertificateDetailsModal({ task, renewals, getUserName, onClose }) {
   const { t } = useTranslation();
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{t('documentDetails')} — {task.documentName}</h3>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto my-auto">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <h3 className="text-base sm:text-lg font-semibold break-words">{t('documentDetails')} — {task.documentName}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -861,7 +940,7 @@ function CertificateDetailsModal({ task, renewals, getUserName, onClose }) {
         </div>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="font-medium text-gray-500">{t('documentType')}</p>
               <p className="text-gray-900">{task.documentType || '—'}</p>
@@ -893,7 +972,7 @@ function CertificateDetailsModal({ task, renewals, getUserName, onClose }) {
                 href={task.attachmentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg overflow-hidden border border-gray-200 max-w-xs"
+                className="block rounded-lg overflow-hidden border border-gray-200 max-w-full sm:max-w-xs"
               >
                 {task.attachmentUrl.match(/\.(pdf)$/i) ? (
                   <span className="block px-4 py-3 bg-gray-100 text-gray-600 text-sm">{t('viewPdf')}</span>
@@ -926,7 +1005,7 @@ function CertificateDetailsModal({ task, renewals, getUserName, onClose }) {
                             {t('viewPdf')}
                           </a>
                         ) : (
-                          <a href={r.attachmentUrl} target="_blank" rel="noopener noreferrer" className="block rounded overflow-hidden border border-gray-200 max-w-[200px]">
+                          <a href={r.attachmentUrl} target="_blank" rel="noopener noreferrer" className="block rounded overflow-hidden border border-gray-200 max-w-full sm:max-w-[200px]">
                             <img src={r.attachmentUrl} alt="" className="w-full h-auto object-contain max-h-32" />
                           </a>
                         )}
@@ -940,7 +1019,7 @@ function CertificateDetailsModal({ task, renewals, getUserName, onClose }) {
         </div>
 
         <div className="mt-4">
-          <button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg">
+          <button type="button" onClick={onClose} className="w-full sm:w-auto px-4 py-2 border rounded-lg text-sm sm:text-base">
             {t('close')}
           </button>
         </div>
